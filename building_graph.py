@@ -3,6 +3,9 @@
 """
 Created on Sat Nov  2 22:37:57 2019
 
+Reading in ConsensusDB, cleaning up and converting into a Snap readable
+format
+
 @author: Yusuf
 """
 
@@ -16,7 +19,6 @@ def convert_category_to_num(edges):
     cat = pd.Categorical(cat)
     return np.array([cat.codes[:int(len(cat.codes)/2)],
                cat.codes[int(len(cat.codes)/2):]])
-
 
 ## Read in consensusPathDB dataset
 df = pd.read_csv('/Users/Yusuf/Google Drive/CS224_Project/Data/ConsensusPathDB_human_PPI.tsv',skiprows=[0], 
@@ -32,9 +34,10 @@ print('Size of dataset with only high confidence elements',
 edges = np.array([d.split(',') for d in df.iloc[:,2].values])
 edges = convert_category_to_num(edges)
 edges = pd.DataFrame(edges.T)
-edges.to_csv('ConsensusPathDB_human_PPI_HiConfidence'
+edges.to_csv('ConsensusPathDB_human_PPI_HiConfidence_snap.csv'
             ,header=False,index=False)
 
 ## Read in snap.py version of graph
-s = snap.LoadEdgeList(snap.PUNGraph,'ConsensusPathDB_human_PPI_HiConfidence',
+s = snap.LoadEdgeList(snap.PUNGraph,'ConsensusPathDB_human_PPI_HiConfidence_snap.csv',
                       0,1,',')
+
