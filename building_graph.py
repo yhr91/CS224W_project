@@ -15,6 +15,8 @@ import glob
 import numpy as np
 from matplotlib import pyplot as plt
 
+home = '/Users/Yusuf/Google Drive/CS224_Project/Data/'
+
 def convert_category_to_num(edges):
     cat = np.concatenate([edges[:,0],edges[:,1]])
     cat = pd.Categorical(cat)
@@ -37,7 +39,7 @@ def get_ConsensusPathDB_data(keys = ['*']):
     ## Read in all ConsensusPathDB sample_ids
     dirs = []
     for k in keys:
-        dirs.extend(glob.glob('/Users/Yusuf/Google Drive/CS224_Project/Data/5330593/*'+k+'*.gz'))
+        dirs.extend(glob.glob(home+'5330593/*'+k+'*.gz'))
     
     dfs = []
     for d in dirs:
@@ -51,8 +53,8 @@ def get_ConsensusPathDB_sample_IDs(dfs):
         samples.extend([l for l in df_.columns])
     return samples
         
-def get_TCGA_sample_IDs(path):
-    df = read_tar(path)   
+def get_TCGA_sample_IDs(organ):
+    df = read_tar(home+'TCGA_sampleID/'+organ+'.gz')   
     return df.sample_submitter_id.values
 
 def get_GTex_sample_IDs(path, organs):
@@ -74,22 +76,21 @@ def clean_gene_labels(list_):
     return new_list_
     
 
-def get_feature_vec(organ):
+def get_feature_vec(organ, tcga, gtex):
     ## Read in ConsensusPathDB GeneExpression data for that organ
     dfs = get_ConsensusPathDB_data(organ)
     
     ## And get sample ids
     all_samples = get_ConsensusPathDB_sample_IDs(dfs)
 
-    ## Refer to TCGA to identify sample_IDs that have a specific cancer
-    samples_tcga = get_TCGA_sample_IDs('/Users/Yusuf/Google Drive/CS224_Project/Data/biospecimen.cases_selection.2019-11-04.tar.gz')
-    
-    ## Refer to GTEx to identify sample_IDs that have a specific cancer
-    samples_gtex = get_GTex_sample_IDs('/Users/Yusuf/Google Drive/CS224_Project/Data/GTex.txt',organ)
+    ## Refer to TCGA/GTEX to identify sample_IDs that have a specific cancer
+    if (tcga): samples_tcga = get_TCGA_sample_IDs(organ[0]);
+    if (gtex): samples_gtex = get_GTex_sample_IDs(home+'GTex.txt',organ);
 
     ## Use those samples that are linked to cancer of interest to calculate means
-    samples = find_samples(samples_tcga,all_samples)
-    samples.extend(find_samples(samples_gtex,all_samples))
+    samples=[]
+    if (tcga): samples.extend(find_samples(samples_tcga,all_samples));
+    if (gtex): samples.extend(find_samples(samples_gtex,all_samples));
     
     mean_dfs = []
     for i,df_ in enumerate(dfs):
@@ -99,9 +100,9 @@ def get_feature_vec(organ):
     return mean_dfs
     
 
-def main():
+def main(tcga=True,gtex=True):
     ## Read in consensusPathDB dataset
-    df = pd.read_csv('/Users/Yusuf/Google Drive/CS224_Project/Data/ConsensusPathDB_human_PPI.tsv',skiprows=[0], 
+    df = pd.read_csv(home+'ConsensusPathDB_human_PPI.tsv',skiprows=[0], 
                      delimiter='\t')
 
     ## Pull out only those interactions which have confidence score > 0.5
@@ -115,16 +116,12 @@ def main():
     edges.to_csv('ConsensusPathDB_human_PPI_HiConfidence_snap.csv'
                 ,header=False,index=False)
     
-    ## Read in snap.py version of graph
-    s = snap.LoadEdgeList(snap.PUNGraph,'ConsensusPathDB_human_PPI_HiConfidence_snap.csv',
-                          0,1,',')
-
     #%% Adding feature vector
-    organs = [['breast'],['bladder'],['kidney']]
+    organs = [['breast'],['bladder','urinary bladder'],['kidney','cortex of kidney']]
     feats_arr = []
     
     for organ in organs:
-        for f in get_feature_vec(organ):
+        for f in get_feature_vec(organ, tcga, gtex):
             feats_arr.append(f)
       
     # Create a single feature matrix and replace genes with node IDs
@@ -135,6 +132,8 @@ def main():
     categories = categories.rename(columns={0:'Hugo_Symbol'})
     feats_df = feats_df.merge(categories, on='Hugo_Symbol')
     
+    feats_df.to_csv(home+'ConsensusPathDB_human_PPI_HiConfidence_snap_FeatsMat.csv')
+    
     return feats_df
     
-df = main()
+df = main(tcga=False, gtex=True)
