@@ -18,8 +18,9 @@ from matplotlib import pyplot as plt
 def convert_category_to_num(edges):
     cat = np.concatenate([edges[:,0],edges[:,1]])
     cat = pd.Categorical(cat)
-    return np.array([cat.codes[:int(len(cat.codes)/2)],
-               cat.codes[int(len(cat.codes)/2):]])
+    return [np.array([cat.codes[:int(len(cat.codes)/2)],
+                      cat.codes[int(len(cat.codes)/2):]]),
+            cat.categories.values]
     
 def find_samples(search_for, search_in):
     sel_samples= []
@@ -60,6 +61,19 @@ def get_GTex_sample_IDs(path, organs):
         ret = df[df['Characteristics[organism part]']==o]['Source Name'].unique()
     return ret
 
+def merge_list_dfs(dfs,on='Hugo_Symbol'):
+    merged_df = dfs[0]
+    for f in dfs[1:]:
+        merged_df = merged_df.merge(f,how='inner')
+    return merged_df
+
+def clean_gene_labels(list_):
+    new_list_ = []
+    for l in list_:
+        new_list_.append([m.split('_')[0] for m in l])
+    return new_list_
+    
+
 def get_feature_vec(organ):
     ## Read in ConsensusPathDB GeneExpression data for that organ
     dfs = get_ConsensusPathDB_data(organ)
@@ -77,11 +91,11 @@ def get_feature_vec(organ):
     samples = find_samples(samples_tcga,all_samples)
     samples.extend(find_samples(samples_gtex,all_samples))
     
-    mean_dfs = {}
+    mean_dfs = []
     for i,df_ in enumerate(dfs):
         mean_df = df_.loc[:,samples+['Hugo_Symbol']]
-        mean_df['Mean'] = mean_df.iloc[:,:-1].mean(1)
-        mean_dfs[organ[i]] = mean_df.loc[:,['Hugo_Symbol','Mean']]
+        mean_df[organ[i]] = mean_df.iloc[:,:-1].mean(1)
+        mean_dfs.append(mean_df.loc[:,['Hugo_Symbol',organ[i]]])
     return mean_dfs
     
 
@@ -95,7 +109,8 @@ def main():
 
     ## Create a snap graph: convert edge IDs from categorical to numerical
     edges = np.array([d.split(',') for d in df.iloc[:,2].values])
-    edges = convert_category_to_num(edges)
+    edges = np.array(clean_gene_labels(edges))
+    edges,categories = convert_category_to_num(edges)
     edges = pd.DataFrame(edges.T)
     edges.to_csv('ConsensusPathDB_human_PPI_HiConfidence_snap.csv'
                 ,header=False,index=False)
@@ -105,11 +120,21 @@ def main():
                           0,1,',')
 
     #%% Adding feature vector
-    organs = [['breast']]
+    organs = [['breast'],['bladder'],['kidney']]
+    feats_arr = []
     
     for organ in organs:
-        df = get_feature_vec(organ)
-
-    return df
+        for f in get_feature_vec(organ):
+            feats_arr.append(f)
+      
+    # Create a single feature matrix and replace genes with node IDs
+    feats_df = merge_list_dfs(feats_arr,on='Hugo_Symbol')
+    
+    # Convert categories into a df for merging
+    categories = pd.DataFrame(categories).reset_index()
+    categories = categories.rename(columns={0:'Hugo_Symbol'})
+    feats_df = feats_df.merge(categories, on='Hugo_Symbol')
+    
+    return feats_df
     
 df = main()
