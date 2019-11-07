@@ -43,7 +43,7 @@ def plot_hist(all_outdeg):
     ax.plot(x, 10**log10_y_fit, '*-') 
     return(x,y,ax)
     
-#%% Plotting degree distributions
+# Plotting degree distributions
 ## Read in snap.py version of graph
 s = snap.LoadEdgeList(snap.PUNGraph,'ConsensusPathDB_human_PPI_HiConfidence_snap.csv',
                       0,1,',')    
