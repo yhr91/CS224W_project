@@ -33,4 +33,5 @@ def load_data():
     
     return X,Y,graph
 
-X,Y,graph = load_data()
+if __name__ == '__main__':
+    X,Y,graph = load_data()

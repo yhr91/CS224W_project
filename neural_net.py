@@ -37,11 +37,10 @@ class GNN(nn.Module):
             return pyg_nn.GCNConv(in_dim, out_dim)
         if self.model_type == 'GATConv':
             return pyg_nn.GATConv(in_dim, out_dim, heads=3)
-    
 
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
-        
+
         if data.num_node_features == 0:
             x = torch.ones(data.num_nodes, 1)
 
