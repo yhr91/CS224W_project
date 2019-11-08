@@ -16,13 +16,33 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 home = '/Users/Yusuf/Google Drive/CS224_Project/Data/'
+entrez_dict = setup_entrez_dict()
 
-def convert_category_to_num(edges):
-    cat = np.concatenate([edges[:,0],edges[:,1]])
-    cat = pd.Categorical(cat)
-    return [np.array([cat.codes[:int(len(cat.codes)/2)],
-                      cat.codes[int(len(cat.codes)/2):]]),
-            cat.categories.values]
+def setup_entrez_dict():
+    dict_df = pd.read_csv('./dataset_collection/HGNC_to_NCBI.txt',delimiter='\t')
+    dict_ = {}
+    for k,d in dict_df.iterrows():
+        dict_[d[0]] = d[1]
+    return dict_
+
+def convert_category_to_num(edges, entrez_dict):
+    new_edges = np.zeros(edges.shape)
+    for i in range(edges.shape[0]):
+        for j in range(edges.shape[1]):
+            try:
+                new_edges[i,j] = entrez_dict[edges[i,j]]
+            except:
+                new_edges[i,j] = -1
+    return new_edges
+
+def entrez_convert(entities, entrez_dict):
+    list_ = []
+    for f in entities:
+        try:
+            list_.append(entrez_dict[f])
+        except:
+            list_.append(-1)
+    return list_
     
 def find_samples(search_for, search_in):
     sel_samples= []
@@ -111,8 +131,10 @@ def main(tcga=True,gtex=True):
     ## Create a snap graph: convert edge IDs from categorical to numerical
     edges = np.array([d.split(',') for d in df.iloc[:,2].values])
     edges = np.array(clean_gene_labels(edges))
-    edges,categories = convert_category_to_num(edges)
-    edges = pd.DataFrame(edges.T)
+    
+    ## Get an EntrezID dictionary
+    edges = convert_category_to_num(edges, entrez_dict)
+    edges = pd.DataFrame(edges)
     edges.to_csv('ConsensusPathDB_human_PPI_HiConfidence_snap.csv'
                 ,header=False,index=False)
     
@@ -128,9 +150,7 @@ def main(tcga=True,gtex=True):
     feats_df = merge_list_dfs(feats_arr,on='Hugo_Symbol')
     
     # Convert categories into a df for merging
-    categories = pd.DataFrame(categories).reset_index()
-    categories = categories.rename(columns={0:'Hugo_Symbol'})
-    feats_df = feats_df.merge(categories, on='Hugo_Symbol')
+    feats_df['NCBI'] = entrez_convert(feats_df['Hugo_Symbol'],entrez_dict)
     
     feats_df.to_csv(home+'ConsensusPathDB_human_PPI_HiConfidence_snap_FeatsMat.csv')
     

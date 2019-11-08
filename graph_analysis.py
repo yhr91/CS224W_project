@@ -40,13 +40,18 @@ def plot_hist(all_outdeg):
     log10_y_fit = polynomial(np.log10(x)) 
     
     ax.plot([0,10**(coeffs[1]/coeffs[0])],[10**coeffs[1],0])
-    ax.plot(x, 10**log10_y_fit, '*-') 
+    ax.plot(x, 10**log10_y_fit, '-',color='r') 
+    plt.title('Degree Distribution of CPDB')
+    plt.xlabel('Out Degree')
+    plt.ylabel('Number of nodes with Degree')
     return(x,y,ax)
     
 # Plotting degree distributions
 ## Read in snap.py version of graph
 s = snap.LoadEdgeList(snap.PUNGraph,'ConsensusPathDB_human_PPI_HiConfidence_snap.csv',
                       0,1,',')    
+#s = snap.LoadEdgeList(snap.PUNGraph,'./dataset_collection/PP-Decagon_ppi.csv',
+#                      0,1,',')   
     
 all_outdeg = []
 for n in s.Nodes():
