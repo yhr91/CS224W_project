@@ -11,6 +11,7 @@ from neural_net import GNN
 import graph_embedding
 import torch.optim as optim
 import torch.nn as nn
+from sklearn.model_selection import train_test_split
 
 class Hyperparams:
     self.num_layers = 3
@@ -26,6 +27,7 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 def prepare(data, params):
     X, y, graph = graph_embedding.load_data()
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=True)
     model = GNN()
     model = model.to(device)
     if params.opt == 'adam':
