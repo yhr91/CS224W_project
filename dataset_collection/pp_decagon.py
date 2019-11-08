@@ -26,8 +26,8 @@ class PPDecagon(object):
         snap.GetOutDegCnt(self.graph, degree_counts)
         out_degree_list = []
         num_nodes_with_degree = []
-        max = 0
-        max_node = ''
+        # max = 0
+        # max_node = ''
         for degree_count in degree_counts:
             out_degree_list.append(np.log10((degree_count.GetVal1())))
             num_nodes_with_degree.append(np.log10(degree_count.GetVal2()))
@@ -37,8 +37,9 @@ class PPDecagon(object):
         y_values_for_slope_line = np.array(out_degree_list)
         y_values_for_slope_line = np.multiply(y_values_for_slope_line, slope) + intercept
         plt.scatter(out_degree_list, num_nodes_with_degree, alpha=0.5)
-        plt.xlim(-0.2, 4)
-        plt.ylim(-0.2, 4)
+        plt.plot(out_degree_list, y_values_for_slope_line, 'r-')
+        plt.xlim(0, max(out_degree_list))
+        plt.ylim(0, max(num_nodes_with_degree))
         plt.plot(out_degree_list, y_values_for_slope_line)
         plt.xlabel("Out Degree (log-scale)")
         plt.ylabel("Number of Nodes with Degree (log-scale)")

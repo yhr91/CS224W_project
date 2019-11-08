@@ -74,6 +74,7 @@ class DGMiner(object):
         plt.ylabel("Number of Nodes with Degree (log-scale)")
         plt.title("Degree Distribution of PP-Decagon Dataset")
         plt.savefig("degree_distribution_pp_decagon.png")
+        print("print this???")
 
 class DGAssocMiner(object):
     def __init__(self):
@@ -149,11 +150,14 @@ class DGAssocMiner(object):
         y_values_for_slope_line = np.array(out_degree_list)
         y_values_for_slope_line = np.multiply(y_values_for_slope_line, slope) + intercept
         plt.scatter(out_degree_list, num_nodes_with_degree, alpha=0.5)
-        plt.plot(out_degree_list, y_values_for_slope_line)
+        plt.plot(out_degree_list, y_values_for_slope_line, 'r-')
+        plt.xlim(0, max(out_degree_list))
+        plt.ylim(0, max(num_nodes_with_degree))
         plt.xlabel("Out Degree (log-scale)")
         plt.ylabel("Number of Nodes with Degree (log-scale)")
         plt.title("Degree Distribution of DG_AssocMiner Dataset")
         plt.savefig("degree_distribution_DG_AssocMiner.png")
+        print("THIS IS HAPPENING")
 
 if __name__ == "__main__":
     graph = DGAssocMiner()
