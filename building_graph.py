@@ -4,7 +4,7 @@
 Created on Sat Nov  2 22:37:57 2019
 
 Reading in ConsensusDB, cleaning up and converting into a Snap readable
-format
+format, Adding TCGA/GTEX data
 
 @author: Yusuf
 """
@@ -158,9 +158,9 @@ def main(tcga=True,gtex=True):
     feats_df = merge_list_dfs(feats_arr,on='Hugo_Symbol')
     
     # Convert categories into a df for merging
-    feats_df['NCBI'] = name_to_entrez(feats_df['Hugo_Symbol'],entrez_dict).astype('int')
+    feats_df['Entrez'] = name_to_entrez(feats_df['Hugo_Symbol'],entrez_dict).astype('int')
     
-    feats_df.to_csv(home+'ConsensusPathDB_human_PPI_HiConfidence_snap_FeatsMat.csv')
+    feats_df.to_csv(home+'TCGA_GTEX_GeneExpression.csv')
     return edges, feats_df
     
 df = main(tcga=False, gtex=True)
@@ -168,4 +168,4 @@ df = main(tcga=False, gtex=True)
 ## To check overlap with PPI
 x = pd.read_csv('./dataset_collection/PP-Decagon_ppi.csv')
 y = x.as_matrix().flatten()
-len([d for d in df[1]['NCBI'] if d in y])
+len([d for d in df[1]['Entrez'] if d in y])
