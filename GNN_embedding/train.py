@@ -22,7 +22,8 @@ def train():
     data = load_pyg(x, edgelist_file, y)
 
     test_loader = loader = DataLoader([data], batch_size=32, shuffle=True)
-    model = GNN(3, 32, 1, 'GCNConv')
+    model = GNN(3, 32, 2, 'GCNConv')
+
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
 
     for epoch in range(20):
