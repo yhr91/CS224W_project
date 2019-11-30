@@ -11,47 +11,60 @@ Created on Fri Nov 29 23:25:36 2019
 import numpy as np
 import pandas as pd
 import torch
-
-import torch
-from torch_geometric.data import Data, DataLoader
+from torch_geometric.data import Data
 
 ## Get X values
-def get_X():
-  X = 'https://github.com/yhr91/CS224W_project/blob/master/Data/ForAnalysis/X/TCGA_GTEX_GeneExpression.csv?raw=true'
-  X = pd.read_csv(X)
+def get_X(x, keep_all_entrez = True):
+  X = pd.read_csv(x)
   X.drop(columns=X.columns[0], inplace=True)
-  X = X[X.Entrez>0] # Removing some junk values
+
+  ## Some Entrez ID's are negative, not sure why...
+  if (keep_all_entrez != True):
+    pass
+    #X = X[X.Entrez>0] # Removing some junk values
   return X
 
 ## Get Y values
-def get_Y(X):
-  Y = 'https://github.com/yhr91/CS224W_project/raw/master/Data/ForAnalysis/Y/NCG_cancergenes_list.txt'
-  Y = pd.read_csv(Y,delimiter='\t')
+def get_Y(X,y):
+  Y = pd.read_csv(y,delimiter='\t')
   Y = set(Y['711_Known_Cancer_Genes'])
   Y = [x for x in list(Y) if x != 'nan']
 
   ## Map Y to Entrez IDs
-  Y = pd.DataFrame(Y).merge(X.loc[:,['Entrez','Hugo_Symbol']],right_on='Hugo_Symbol',left_on = 0)
+  Y = pd.DataFrame(Y).merge(X.loc[:,['Entrez','Hugo_Symbol']],
+                            right_on='Hugo_Symbol',left_on = 0)
   Y = Y.Entrez.values
-  
+  Y = [1 if i in Y else 0 for i in X.Entrez.values]
+
   return Y
 
 ## Get edge list
-def get_edges():
-  edgelist = 'https://github.com/yhr91/CS224W_project/blob/master/Data/PP-Decagon_ppi.csv?raw=true'
-  edgelist = pd.read_csv(edgelist, header=None)
+def get_edges(X, edgelist_file):
+  edgelist = pd.read_csv(edgelist_file, header=None)
+
+  # Remove edges for which we don't have entrez
+  idx = np.logical_and(edgelist[0].isin(X.Entrez.values),
+                edgelist[1].isin(X.Entrez.values))
+  edgelist = edgelist[idx]
   return edgelist
 
 # Create data loader
-def load_pyg(x, edge_index, y): 
-  # Get X,Y,edges
-  X = get_X()
-  Y = get_Y(X)
-  edgelist = get_edges()
+def load_pyg(x, edgelist_file, y): 
 
-  X = torch.tensor(X.iloc[:,1:4].values)
-  Y = torch.tensor(Y)
-  edges = torch.tensor(edgelist, dtype=torch.long)
+  # Get X,Y,edges
+  X = get_X(x)
+  Y = get_Y(X, y)
+  edgelist = get_edges(X, edgelist_file)
+
+  # Get the ordering of samples in X,Y...
+  mappings = {X.Entrez.values[i]: i for i in range(len(X))}
+  X = torch.tensor(X.iloc[:,1:4].values, dtype=torch.float)
+  Y = torch.tensor(Y,dtype=torch.long)
+
+  # .. and use it to number nodes in edge list
+  edgelist[0] = edgelist[0].apply(lambda cell: mappings[cell])
+  edgelist[1] = edgelist[1].apply(lambda cell: mappings[cell])
+  edges = torch.tensor(edgelist.values, dtype=torch.long)
 
   # Create masks
   ones = np.random.choice(np.where(Y == 1)[0], size = 50)
