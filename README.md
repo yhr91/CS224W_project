@@ -1,7 +1,12 @@
-Shared space for CS 224W code
+## Graph embeddings of enriched protein-protein interaction (PPI) networks for identification of disease nodes
+
+Goals:
+Integration of traditionally distinct data modalities (including literature based knowledge graphs and multi-omics datasets) to enrich the information content of a PPI graph
+Developing new methods for embedding these enriched graphs within a shared space that allows for better detection of disease modules in the graph
 
 
-## Disease node classification leaderboard
+
+### Disease node classification leaderboard
 
 
 | Model | Graph | Features | Other Comments | Accuracy* |
