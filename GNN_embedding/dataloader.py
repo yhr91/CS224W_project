@@ -16,7 +16,8 @@ from torch_geometric.data import Data
 ## Get X values
 def get_X(x, keep_all_entrez = True):
   X = pd.read_csv(x)
-  X.drop(columns=X.columns[0], inplace=True)
+  X = X.drop(columns=X.columns[0])
+  X = X.drop_duplicates(subset = 'Entrez')
 
   ## Some Entrez ID's are negative, not sure why...
   if (keep_all_entrez != True):
@@ -28,7 +29,7 @@ def get_X(x, keep_all_entrez = True):
 def get_Y(X,y):
   Y = pd.read_csv(y,delimiter='\t')
   Y = set(Y['711_Known_Cancer_Genes'])
-  Y = [x for x in list(Y) if x != 'nan']
+  Y = [x for x in list(Y) if x == x]
 
   ## Map Y to Entrez IDs
   Y = pd.DataFrame(Y).merge(X.loc[:,['Entrez','Hugo_Symbol']],
@@ -48,7 +49,6 @@ def get_edges(X, edgelist_file):
   edgelist = edgelist[idx]
   return edgelist
 
-# Create data loader
 def load_pyg(x, edgelist_file, y): 
 
   # Get X,Y,edges
@@ -67,16 +67,19 @@ def load_pyg(x, edgelist_file, y):
   edges = torch.tensor(edgelist.values, dtype=torch.long)
 
   # Create masks
-  ones = np.random.choice(np.where(Y == 1)[0], size = 50)
-  zeros = np.random.choice(np.where(Y == 0)[0], size = 50)
-  test_mask = [1 if i in ones or i in zeros 
-              else 0 for i in range(len(Y))]
-  train_mask = [1 if i not in ones and i not in zeros 
-                else 0 for i in range(len(Y))]
+  np.random.seed(20) # to make sure the test set is always the same
+  ones = np.random.choice(np.where(Y == 1)[0], size = 100, replace = False)
+  np.random.seed(30)
+  zeros = np.random.choice(np.where(Y == 0)[0], size = 100, replace = False)
+
+  test_mask = [True if i in ones or i in zeros 
+              else False for i in range(len(Y))]
+  train_mask = [True if i not in ones and i not in zeros 
+                else False for i in range(len(Y))]
 
   # Return data loader
   data = Data(x=X, edge_index=edges.t().contiguous(), y=Y)
-  data.train_mask = torch.tensor(train_mask, dtype=torch.long)
-  data.test_mask = torch.tensor(test_mask, dtype=torch.long)
+  data.train_mask = torch.tensor(train_mask, dtype=torch.bool)
+  data.test_mask = torch.tensor(test_mask, dtype=torch.bool)
 
   return data

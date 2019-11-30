@@ -9,11 +9,30 @@ Created on Fri Nov 29 23:25:36 2019
 
 import torch
 import sys
+import numpy as np
 sys.path.append('../')
 from neural_net import GNN
 from dataloader import load_pyg
 import torch.nn.functional as F
 from torch_geometric.data import DataLoader
+
+def get_acc(model, loader):
+  correct = 0
+  total = 0
+  for d in loader:
+          with torch.no_grad():
+              pred = model(d).max(dim=1)[1][d.test_mask]
+              label = d.y[d.test_mask]
+
+              print(np.unique(label,return_counts=True))
+              print(np.unique(pred,return_counts=True))
+          correct += pred.eq(label).sum().item()
+          total += torch.sum(d.test_mask).item()
+  return correct/total
+
+def get_weight(x_):
+  a,b = np.unique(x_, return_counts=True)[1]
+  return torch.tensor([(1-a/(a+b)), (1-b/(a+b))])
 
 def train():
     x = 'https://github.com/yhr91/CS224W_project/blob/master/Data/ForAnalysis/X/TCGA_GTEX_GeneExpression.csv?raw=true'
@@ -25,28 +44,31 @@ def train():
     model = GNN(3, 32, 2, 'GCNConv')
 
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
+    weight = get_weight(data.y)
+    test_acc = []
 
-    for epoch in range(20):
+    print('Before training')
+    print(get_acc(model, test_loader))
+    for epoch in range(15):
         model.train()
         for batch in loader:
             optimizer.zero_grad()
             out = model(batch)
-            loss = F.nll_loss(out[batch.train_mask], batch.y[batch.train_mask])
+            loss = F.nll_loss(out[batch.train_mask], 
+                              batch.y[batch.train_mask], weight=weight)
             loss.backward()
             optimizer.step()
             print(loss.item())
+            
+            if epoch % 5 == 0:
+                test_acc.append(get_acc(model, test_loader))
+                print(test_acc[-1])
+          
 
     model.eval()
-    correct = 0
-    for d in test_loader:
-        with torch.no_grad():
-            pred = model(d).max(dim=1)[1][d.test_mask]
-            label = d.y[d.test_mask]
-        correct += pred.eq(label).sum().item()
-    total = 0
-    for d in test_loader.dataset:
-        total += torch.sum(d.test_mask).item()
-    print('Accuracy is', correct / total)
+    acc = get_acc(model, test_loader)
+    print('Final Accuracy is', acc)
+
     
 if __name__ == '__main__':
     train()
