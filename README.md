@@ -12,6 +12,9 @@ Developing new methods for embedding these enriched graphs within a shared space
 | Model | Graph | Features | Other Comments | Accuracy* |
 | --- | --- | --- | --- | --- |
 | GCN | PP-Decagon | None | --- | --- |
+| GCN | PP-Decagon + GNBR | None | --- | --- |
+| GCN | None | GTex (kidney, bladder, breast) | --- | --- |
 | GCN | PP-Decagon | GTex (kidney, bladder, breast) | --- | --- |
+| GCN | PP-Decagon + GNBR | GTex (kidney, bladder, breast) | --- | --- |
 
 *Using cancer gene labels from Network of Cancer Genes (*711 known cancer genes*)
