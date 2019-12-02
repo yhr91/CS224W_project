@@ -30,6 +30,7 @@ def make_cross_val_sets(data, n=5):
   intervals_1 = np.linspace(0,len(idx_1),n+1).astype(int)
 
   masks = []
+  prev = 0
   for i in range(1,n+1):
     s = np.array([False]*len(data.y)) 
     s[idx_0[intervals_0[i-1]:intervals_0[i]]] = True
@@ -49,7 +50,7 @@ def get_acc(model, loader, is_val):
               else:
                 pred = model(d).max(dim=1)[1][d.test_mask]
                 label = d.y[d.test_mask]
-              print(np.unique(pred,return_counts=True))
+              print(np.unique(pred,return_counts=True)[1])
           correct += pred.eq(label).sum().item()
 
           if (is_val):
@@ -77,12 +78,14 @@ def sample_from_mask(mask,data,k):
           mask[i] = False
   return mask
 
-def train(loader, weight):
+
+def train(loader, weight, epochs = 50):
     model = GNN(3, 32, 2, 'GCNConv')
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
     val_acc = [] 
+    model_save = model
 
-    for epoch in range(500):
+    for epoch in range(epochs):
         model.train()
         for batch in loader:
             optimizer.zero_grad()
@@ -93,12 +96,15 @@ def train(loader, weight):
             optimizer.step()
             print(loss.item())
             
-            if epoch % 2 == 0:
+            if epoch % 5 == 0:
                 val_acc.append(get_acc(model, loader, is_val = True))
                 print('Validation:',val_acc[-1])
-          
+                if(val_acc[-1]==np.max(val_acc)):
+                  model_save = model
+                  best_acc = val_acc[-1]
+
     model.eval()
-    return val_acc 
+    return val_acc, model_save, best_acc
 
 def trainer(num_folds = 5):
     x = 'https://github.com/yhr91/CS224W_project/blob/master/Data/ForAnalysis/X/TCGA_GTEX_GeneExpression.csv?raw=true'
@@ -108,13 +114,12 @@ def trainer(num_folds = 5):
     # Set up train and test sets:
     data = load_pyg(x, edgelist_file, y)
     masks = make_cross_val_sets(data,num_folds)
-    weight = get_weight(data.y)
 
     data = load_pyg(x, edgelist_file, y)
     masks = make_cross_val_sets(data,num_folds)
 
     # 5-fold cross validation
-    val_accs = []
+    val_accs = []; models = []; accs = [];
     for val_idx in range(num_folds):
       print('Fold number: ',val_idx)
       train_idx = np.delete(np.arange(num_folds),val_idx)
@@ -131,12 +136,19 @@ def trainer(num_folds = 5):
       data.train_mask = torch.tensor(train_mask, dtype=torch.bool)
       data.val_mask = torch.tensor(val_mask, dtype=torch.bool)
       loader = DataLoader([data], batch_size=32, shuffle=True)
-      val_accs.append(train(loader, weight))
+      weight = get_weight(data.y[train_mask])
+      
+      v, m, acc = train(loader, weight)
+      val_accs.append(v)
+      models.append(m)
+      accs.append(acc)
+
+    best_model = models[np.argmax(accs)]
+    print('Best model accuracy:')
+    acc = get_acc(m, loader, is_val = False)
+    print(acc)
 
     return val_accs
-
-    #acc = get_acc(model, loader, is_val = False)
-    #print('Final Accuracy is', acc)
     
 if __name__ == '__main__':
     trainer()

@@ -8,13 +8,13 @@ Developing new methods for embedding these enriched graphs within a shared space
 
 ### Disease node classification leaderboard
 
-
 | Model | Graph | Features | Other Comments | Accuracy* |
 | --- | --- | --- | --- | --- |
 | GCN | PP-Decagon | None | --- | --- |
 | GCN | PP-Decagon + GNBR | None | --- | --- |
 | GCN | None | GTex (kidney, bladder, breast) | --- | --- |
-| GCN | PP-Decagon | GTex (kidney, bladder, breast) | --- | --- |
+| GCN | PP-Decagon | GTex (kidney, bladder, breast) | --- | 0.54 |
 | GCN | PP-Decagon + GNBR | GTex (kidney, bladder, breast) | --- | --- |
 
 *Using cancer gene labels from Network of Cancer Genes (*711 known cancer genes*)
+Results produced after applying 5-fold cros validation and choosing the best performing model across all folds
