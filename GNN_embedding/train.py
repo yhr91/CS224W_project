@@ -15,6 +15,7 @@ import numpy as np
 from neural_net import GNN
 import utils
 import load_entrez
+import load_assoc
 import copy
 
 ## Given a graph and training mask, obtain 5 folds for train/val splits
@@ -108,12 +109,14 @@ def train(loader, weight, epochs = 50):
     return val_acc, model_save, best_acc
 
 def trainer(num_folds = 5):
-    X_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/ForAnalysis/X/TCGA_GTEX_GeneExpression.csv?raw=true'
-    y_file = 'https://github.com/yhr91/CS224W_project/raw/master/Data/ForAnalysis/Y/NCG_cancergenes_list.txt'
-    edgelist_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/PP-Decagon_ppi.csv?raw=true'
-    X = load_entrez.get_X(X_file)
-    y = load_entrez.get_y(X, y_file)
-    edges = load_entrez.get_edges(X, edgelist_file)
+    # X_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/ForAnalysis/X/TCGA_GTEX_GeneExpression.csv?raw=true'
+    # y_file = 'https://github.com/yhr91/CS224W_project/raw/master/Data/ForAnalysis/Y/NCG_cancergenes_list.txt'
+    # edgelist_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/PP-Decagon_ppi.csv?raw=true'
+    y_file = '../dataset_collection/DG-AssocMiner_miner-disease-gene.tsv'
+    edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
+    X = load_entrez.get_X(edgelist_file)
+    y = load_entrez.get_y(y_file, edgelist_file)
+    edges = load_entrez.get_edges(edgelist_file)
 
     X = torch.tensor(X.iloc[:,1:4].values, dtype=torch.float)
     y = torch.tensor(y,dtype=torch.long)
