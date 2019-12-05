@@ -44,9 +44,11 @@ def make_cross_val_sets(data, n=5):
 def get_acc(model, loader, is_val):
     correct = 0
     total = 0
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     if is_val:
         model.eval()
     for d in loader:
+        d = d.to(device)
         with torch.no_grad():
             if is_val:
                 pred = model(d).max(dim=1)[1][d.val_mask]
@@ -83,15 +85,18 @@ def sample_from_mask(mask, data, k):
     return mask
 
 def train(loader, weight, epochs = 50):
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model = GNN(3, 32, 2, 'GCNConv')
+    model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
     criterion = F.nll_loss
     val_acc = [] 
-    model_save = copy.deepcopy(model)
+    model_save = copy.deepcopy(model.cpu())
 
     for epoch in range(epochs):
         model.train()
         for batch in loader:
+            batch = batch.to(device)
             optimizer.zero_grad()
             out = model(batch)
             loss = criterion(out[batch.train_mask], batch.y[batch.train_mask], weight=weight)
@@ -103,20 +108,20 @@ def train(loader, weight, epochs = 50):
                 val_acc.append(get_acc(model, loader, is_val = True))
                 print('Validation:', val_acc[-1])
                 if(val_acc[-1]==np.max(val_acc)):
-                    model_save = copy.deepcopy(model)
+                    model_save = copy.deepcopy(model.cpu())
                     best_acc = val_acc[-1]
 
     return val_acc, model_save, best_acc
 
 def trainer(num_folds = 5):
-    # X_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/ForAnalysis/X/TCGA_GTEX_GeneExpression.csv?raw=true'
-    # y_file = 'https://github.com/yhr91/CS224W_project/raw/master/Data/ForAnalysis/Y/NCG_cancergenes_list.txt'
-    # edgelist_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/PP-Decagon_ppi.csv?raw=true'
-    y_file = '../dataset_collection/DG-AssocMiner_miner-disease-gene.tsv'
-    edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
-    X = load_entrez.get_X(edgelist_file)
-    y = load_entrez.get_y(y_file, edgelist_file)
-    edges = load_entrez.get_edges(edgelist_file)
+    X_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/ForAnalysis/X/TCGA_GTEX_GeneExpression.csv?raw=true'
+    y_file = 'https://github.com/yhr91/CS224W_project/raw/master/Data/ForAnalysis/Y/NCG_cancergenes_list.txt'
+    edgelist_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/PP-Decagon_ppi.csv?raw=true'
+    # y_file = '../dataset_collection/DG-AssocMiner_miner-disease-gene.tsv'
+    # edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
+    X = load_entrez.get_X(X_file)
+    y = load_entrez.get_y(X, y_file)
+    edges = load_entrez.get_edges(X, edgelist_file)
 
     X = torch.tensor(X.iloc[:,1:4].values, dtype=torch.float)
     y = torch.tensor(y,dtype=torch.long)
