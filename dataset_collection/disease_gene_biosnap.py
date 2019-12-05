@@ -143,7 +143,7 @@ class DGAssocMiner(object):
         max_node = ''
         for degree_count in degree_counts:
             out_degree_list.append(np.log10((degree_count.GetVal1())))
-            num_nodes_with_degree.append(np.log(degree_count.GetVal2()))
+            num_nodes_with_degree.append(np.log10(degree_count.GetVal2()))
         slope, intercept, r_value, p_value, std_err = stats.linregress(out_degree_list,
                                                                        num_nodes_with_degree)
         # slope_line = int(slope) * out_degree_list + intercept
