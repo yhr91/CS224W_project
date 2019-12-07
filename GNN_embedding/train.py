@@ -1,44 +1,33 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Nov 29 23:25:36 2019
-
-@author: Kendrick, Yusuf
-
-"""
-
 import torch
 import torch.nn.functional as F
 from torch_geometric.data import DataLoader
 
 import numpy as np
-from neural_net import GNN
-import utils
 import load_entrez
 import load_assoc
 import copy
 
 ## Given a graph and training mask, obtain 5 folds for train/val splits
 def make_cross_val_sets(data, n=5):
-
-    idx_0 = np.where(data.y[data.train_mask]==0)[0]
+    
+    idx_0 = np.where(data.y.cpu()[data.train_mask]==0)[0]
     np.random.seed(40)
     np.random.shuffle(idx_0)
     intervals_0 = np.linspace(0,len(idx_0),n+1).astype(int)
-
-    idx_1 = np.where(data.y[data.train_mask]==1)[0]
+    
+    idx_1 = np.where(data.y.cpu()[data.train_mask]==1)[0]
     np.random.seed(50)
     np.random.shuffle(idx_1)
     intervals_1 = np.linspace(0,len(idx_1),n+1).astype(int)
-
+    
     masks = []
     prev = 0
     for i in range(1,n+1):
-        s = np.array([False]*len(data.y)) 
+        s = np.array([False]*len(data.y))
         s[idx_0[intervals_0[i-1]:intervals_0[i]]] = True
         s[idx_1[intervals_1[i-1]:intervals_1[i]]] = True
         masks.append(s)
-
+    
     return masks
 
 def get_acc(model, loader, is_val, device = None):
@@ -48,22 +37,22 @@ def get_acc(model, loader, is_val, device = None):
         model.eval()
     for d in loader:
         if (device is not None):
-        	d = d.to(device)
+            d = d.to(device)
         with torch.no_grad():
             if is_val:
                 pred = model(d).max(dim=1)[1][d.val_mask]
-                label = d.y[d.val_mask]
+                label = d.y.cpu()[d.val_mask]
             else:
                 pred = model(d).max(dim=1)[1][d.test_mask]
-                label = d.y[d.test_mask]
+                label = d.y.cpu()[d.test_mask]
             print(np.unique(pred,return_counts=True)[1])
         correct += pred.eq(label).sum().item()
 
-        if is_val:
-            total += torch.sum(d.val_mask).item()
+if is_val:
+    total += torch.sum(d.val_mask).item()
         else:
             total += torch.sum(d.test_mask).item()
-    return correct/total
+return correct/total
 
 def get_weight(x_):
     a,b = np.unique(x_, return_counts=True)[1]
@@ -86,32 +75,32 @@ def sample_from_mask(mask, data, k):
 
 def train(loader, weight, epochs = 50,device=None):
     model = GNN(3, 32, 2, 'GCNConv')
-    if (device is not None):
-    	model = model.to(device)
+    if (device != None):
+        model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
     criterion = F.nll_loss
-    val_acc = [] 
-    model_save = copy.deepcopy(model.cpu())
+    val_acc = []
+model_save = copy.deepcopy(model.cpu())
 
-    for epoch in range(epochs):
-        model.train()
-        for batch in loader:
-            batch = batch.to(device)
-            optimizer.zero_grad()
-            out = model(batch)
-            loss = criterion(out[batch.train_mask], batch.y[batch.train_mask], weight=weight)
-            loss.backward()
-            optimizer.step()
-            print('loss on epoch', epoch, 'is', loss.item())
-            
-            if epoch % 5 == 0:
-                val_acc.append(get_acc(model, loader, is_val = True, device = device))
-                print('Validation:', val_acc[-1])
-                if(val_acc[-1]==np.max(val_acc)):
-                    model_save = copy.deepcopy(model.cpu())
-                    best_acc = val_acc[-1]
+for epoch in range(epochs):
+    model.train()
+    for batch in loader:
+        batch = batch.to(device)
+        optimizer.zero_grad()
+        out = model(batch)
+        loss = criterion(out[batch.train_mask], batch.y[batch.train_mask], weight=weight)
+        loss.backward()
+        optimizer.step()
+        print('loss on epoch', epoch, 'is', loss.item())
+        
+        if epoch % 5 == 0:
+            val_acc.append(get_acc(model, loader, is_val = True, device = device))
+            print('Validation:', val_acc[-1])
+            if(val_acc[-1]==np.max(val_acc)):
+                model_save = copy.deepcopy(model.cpu())
+                best_acc = val_acc[-1]
 
-    return val_acc, model_save, best_acc
+return val_acc, model_save, best_acc
 
 def trainer(num_folds = 5):
     X_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/ForAnalysis/X/TCGA_GTEX_GeneExpression.csv?raw=true'
@@ -123,15 +112,15 @@ def trainer(num_folds = 5):
     X = load_entrez.get_X(X_file)
     y = load_entrez.get_y(X, y_file)
     edges = load_entrez.get_edges(X, edgelist_file)
-
+    
     X = torch.tensor(X.iloc[:,1:4].values, dtype=torch.float, device = device)
     y = torch.tensor(y,dtype=torch.long, device = device)
     edges = torch.tensor(edges.values, dtype=torch.long, device = device)
-
+    
     # Set up train and test sets:
-    data = utils.load_pyg(X, edges, y)
+    data = utils.load_pyg(X, edges, y, device=device)
     masks = make_cross_val_sets(data, num_folds)
-
+    
     # 5-fold cross validation
     val_accs, models, accs = [], [], []
     for val_idx in range(num_folds):
@@ -140,29 +129,29 @@ def trainer(num_folds = 5):
         train_mask = [False] * len(data.y)
         for i in range(len(train_idx)):
             train_mask = np.logical_or(train_mask,masks[i])
-        
-        ## For the validation mask, use the validation fold but 
+    
+        ## For the validation mask, use the validation fold but
         ## pick equal nodes from each class
         val_mask = masks[val_idx]
         val_mask = sample_from_mask(val_mask, data, 100)
-
-        # Call training function
-        data.train_mask = torch.tensor(train_mask, dtype=torch.bool)
-        data.val_mask = torch.tensor(val_mask, dtype=torch.bool)
-        loader = DataLoader([data], batch_size=32, shuffle=True)
-        weight = get_weight(data.y[train_mask])
         
-        v, m, acc = train(loader, weight, device)
+        # Call training function
+        data.train_mask = torch.tensor(train_mask, dtype=torch.bool, device = device)
+        data.val_mask = torch.tensor(val_mask, dtype=torch.bool, device = device)
+        loader = DataLoader([data], batch_size=32, shuffle=True)
+        weight = get_weight(data.y.cpu()[train_mask])
+        
+        v, m, acc = train(loader, weight, device = device)
         val_accs.append(v)
         models.append(m)
-        accs.append(acc)
+    accs.append(acc)
 
-    best_model = models[np.argmax(accs)]
-    print('Best model accuracy:')
-    acc = get_acc(m, loader, is_val = False, device = device)
-    print(acc)
+best_model = models[np.argmax(accs)]
+print('Best model accuracy:')
+acc = get_acc(m, loader, is_val = False, device = device)
+print(acc)
 
-    return val_accs
-    
+return val_accs
+
 if __name__ == '__main__':
     trainer()

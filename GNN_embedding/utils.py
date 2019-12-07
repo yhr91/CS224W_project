@@ -14,12 +14,12 @@ import numpy as np
 import torch
 from torch_geometric.data import Data
 
-def load_pyg(X, edges, y, size=100): 
+def load_pyg(X, edges, y, size=100, device = None):
   # Create masks
   np.random.seed(20) # to make sure the test set is always the same
-  ones = np.random.choice(np.where(y == 1)[0], size=size, replace=False)
+  ones = np.random.choice(np.where(y.cpu() == 1)[0], size=size, replace=False)
   np.random.seed(30)
-  zeros = np.random.choice(np.where(y == 0)[0], size=size, replace=False)
+  zeros = np.random.choice(np.where(y.cpu() == 0)[0], size=size, replace=False)
 
   test_mask = [True if i in ones or i in zeros 
               else False for i in range(len(y))]
@@ -28,7 +28,7 @@ def load_pyg(X, edges, y, size=100):
 
   # Return data loader
   data = Data(x=X, edge_index=edges.t().contiguous(), y=y)
-  data.train_mask = torch.tensor(train_mask, dtype=torch.bool)
-  data.test_mask = torch.tensor(test_mask, dtype=torch.bool)
+  data.train_mask = torch.tensor(train_mask, dtype=torch.bool, device = device)
+  data.test_mask = torch.tensor(test_mask, dtype=torch.bool, device = device)
 
   return data
