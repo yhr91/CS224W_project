@@ -51,6 +51,7 @@ def train(loader, weight=None, epochs=50):
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
     criterion = F.nll_loss
     val_acc = []
+    losses = []
     model_save = copy.deepcopy(model.cpu())
 
     for epoch in range(epochs):
@@ -62,6 +63,7 @@ def train(loader, weight=None, epochs=50):
             loss = criterion(out[batch.train_mask], batch.y[batch.train_mask])
             loss.backward()
             optimizer.step()
+            losses.append(loss.item())
             print('loss on epoch', epoch, 'is', loss.item())
 
             if epoch % 5 == 0:
@@ -71,6 +73,9 @@ def train(loader, weight=None, epochs=50):
                     model_save = copy.deepcopy(model.cpu())
                     best_acc = val_acc[-1]
 
+    from datetime import datetime
+    with open(str(datetime.now())[:19].replace(' ', '-') + '.txt', 'w') as f:
+        f.write(str([losses, val_acc]))
     return val_acc, model_save, best_acc
 
 def trainer(num_folds = 5):
