@@ -41,14 +41,14 @@ def make_cross_val_sets(data, n=5):
 
     return masks
 
-def get_acc(model, loader, is_val):
+def get_acc(model, loader, is_val, device = None):
     correct = 0
     total = 0
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     if is_val:
         model.eval()
     for d in loader:
-        d = d.to(device)
+        if (device is not None):
+        	d = d.to(device)
         with torch.no_grad():
             if is_val:
                 pred = model(d).max(dim=1)[1][d.val_mask]
@@ -84,10 +84,10 @@ def sample_from_mask(mask, data, k):
                 mask[i] = False
     return mask
 
-def train(loader, weight, epochs = 50):
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+def train(loader, weight, epochs = 50,device=None):
     model = GNN(3, 32, 2, 'GCNConv')
-    model = model.to(device)
+    if (device is not None):
+    	model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
     criterion = F.nll_loss
     val_acc = [] 
@@ -105,7 +105,7 @@ def train(loader, weight, epochs = 50):
             print('loss on epoch', epoch, 'is', loss.item())
             
             if epoch % 5 == 0:
-                val_acc.append(get_acc(model, loader, is_val = True))
+                val_acc.append(get_acc(model, loader, is_val = True, device = device))
                 print('Validation:', val_acc[-1])
                 if(val_acc[-1]==np.max(val_acc)):
                     model_save = copy.deepcopy(model.cpu())
@@ -116,6 +116,7 @@ def train(loader, weight, epochs = 50):
 def trainer(num_folds = 5):
     X_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/ForAnalysis/X/TCGA_GTEX_GeneExpression.csv?raw=true'
     y_file = 'https://github.com/yhr91/CS224W_project/raw/master/Data/ForAnalysis/Y/NCG_cancergenes_list.txt'
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     edgelist_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/PP-Decagon_ppi.csv?raw=true'
     # y_file = '../dataset_collection/DG-AssocMiner_miner-disease-gene.tsv'
     # edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
@@ -123,9 +124,9 @@ def trainer(num_folds = 5):
     y = load_entrez.get_y(X, y_file)
     edges = load_entrez.get_edges(X, edgelist_file)
 
-    X = torch.tensor(X.iloc[:,1:4].values, dtype=torch.float)
-    y = torch.tensor(y,dtype=torch.long)
-    edges = torch.tensor(edges.values, dtype=torch.long)
+    X = torch.tensor(X.iloc[:,1:4].values, dtype=torch.float, device = device)
+    y = torch.tensor(y,dtype=torch.long, device = device)
+    edges = torch.tensor(edges.values, dtype=torch.long, device = device)
 
     # Set up train and test sets:
     data = utils.load_pyg(X, edges, y)
@@ -151,14 +152,14 @@ def trainer(num_folds = 5):
         loader = DataLoader([data], batch_size=32, shuffle=True)
         weight = get_weight(data.y[train_mask])
         
-        v, m, acc = train(loader, weight)
+        v, m, acc = train(loader, weight, device)
         val_accs.append(v)
         models.append(m)
         accs.append(acc)
 
     best_model = models[np.argmax(accs)]
     print('Best model accuracy:')
-    acc = get_acc(m, loader, is_val = False)
+    acc = get_acc(m, loader, is_val = False, device = device)
     print(acc)
 
     return val_accs
