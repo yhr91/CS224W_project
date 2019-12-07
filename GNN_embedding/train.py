@@ -19,7 +19,7 @@ def get_acc(model, loader, is_val = False):
         with torch.no_grad():
             pred = model(data).max(dim=1)[1]
             label = data.y
-            print(np.unique(pred, return_counts=True)[1])
+            print(np.unique(pred.cpu(), return_counts=True)[1])
         correct += pred[data.test_mask].eq(label[data.test_mask]).sum().item()
         total += torch.sum(data.test_mask).item()
     return correct/total
@@ -99,9 +99,9 @@ def trainer(num_folds = 5):
         accs.append(best_acc)
 
     best_model = models[np.argmax(accs)]
-    print('Best model accuracy:')
-    acc = get_acc(model, test_set, is_val = False)
-    print(acc)
+    #print('Best model accuracy:')
+    #acc = get_acc(model, test_set, is_val = False)
+    #print(acc)
 
     return val_accs
 

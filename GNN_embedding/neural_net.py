@@ -24,7 +24,7 @@ class GNN(nn.Module):
 
         self.layers = nn.ModuleList()
         self.layers.append(self.build_model(in_dim, hidden_dim))
-        for l in range(self.num_layers):
+        for l in range(self.num_layers - 1):
             self.layers.append(self.build_model(hidden_dim, hidden_dim))
 
         # post-message-passing
@@ -48,10 +48,15 @@ class GNN(nn.Module):
         if data.num_node_features == 0:
             x = torch.ones(data.num_nodes, 1)
 
+        # for some reason, the layers were in CPU, so have to convert every time
+        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
         for i in range(self.num_layers):
+            self.layers[i] = self.layers[i].to(device)
             x = self.layers[i](x, edge_index)
             x = F.relu(x)
             x = F.dropout(x, p=self.dropout, training=self.training)
 
+        self.post_mp = self.post_mp.to(device)
         x = self.post_mp(x)
         return F.log_softmax(x, dim=1)
