@@ -22,18 +22,18 @@ def get_acc(model, loader, is_val = False):
             print(np.unique(pred.cpu(), return_counts=True)[1])
         correct += pred[data.test_mask].eq(label[data.test_mask]).sum().item()
         total += torch.sum(data.test_mask).item()
-    return correct/total
+    return correct / total
 
 def get_weight(x_):
-    a,b = np.unique(x_, return_counts=True)[1]
-    return torch.tensor([(1-a/(a+b)), (1-b/(a+b))])
+    a, b = np.unique(x_, return_counts=True)[1]
+    return torch.tensor([(1 - a / (a + b)), (1 - b / (a + b))])
 
 # Identifies k nodes form each class within a given mask and removes the rest
 def sample_from_mask(mask, data, k):
     counts = {}
     counts[0] = 0
     counts[1] = 0
-    for i,val in enumerate(mask):
+    for i, val in enumerate(mask):
         if val == True:
             if data.y[i] == 0:
                 counts[0] += 1
@@ -43,7 +43,8 @@ def sample_from_mask(mask, data, k):
                 mask[i] = False
     return mask
 
-def train(loader, weight = None, epochs = 50):
+
+def train(loader, weight=None, epochs=50):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model = GNN(3, 32, 2, 'GCNConv')
     model = model.to(device)
@@ -62,11 +63,11 @@ def train(loader, weight = None, epochs = 50):
             loss.backward()
             optimizer.step()
             print('loss on epoch', epoch, 'is', loss.item())
-            
+
             if epoch % 5 == 0:
-                val_acc.append(get_acc(model, loader, is_val = True))
+                val_acc.append(get_acc(model, loader, is_val=True))
                 print('Validation:', val_acc[-1])
-                if(val_acc[-1] == np.max(val_acc)):
+                if (val_acc[-1] == np.max(val_acc)):
                     model_save = copy.deepcopy(model.cpu())
                     best_acc = val_acc[-1]
 
@@ -81,14 +82,14 @@ def trainer(num_folds = 5):
     X = load_entrez.get_X(X_file)
     y = load_entrez.get_y(X, y_file)
     edges = load_entrez.get_edges(X, edgelist_file)
-    
-    X = torch.tensor(X.iloc[:,1:4].values, dtype=torch.float)
+
+    X = torch.tensor(X.iloc[:, 1:4].values, dtype=torch.float)
     y = torch.tensor(y, dtype=torch.long)
     edges = torch.tensor(edges.values, dtype=torch.long)
-    
+
     # Set up train and test sets:
     data_generator = utils.load_pyg(X, edges, y, folds=num_folds)
-    
+
     # 5-fold cross validation
     val_accs, models, accs = [], [], []
     for idx, loader in enumerate(data_generator):
