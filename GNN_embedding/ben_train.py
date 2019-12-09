@@ -6,7 +6,7 @@ from typing import Any
 import torch
 import torch.nn.functional as F
 from torch_geometric.data import DataLoader
-
+from datetime import datetime
 import numpy as np
 # import load_entrez
 #import load_assoc
@@ -77,11 +77,7 @@ def train(loader, epochs=100):
                 if (val_acc[-1] == np.max(val_acc)):
                     model_save = copy.deepcopy(model.cpu())
                     best_acc = val_acc[-1]
-
-    from datetime import datetime
-    with open(str(datetime.now())[:19].replace(' ', '-') + '.txt', 'w') as f:
-        f.write(str([losses, val_acc]))
-    return val_acc, model_save, best_acc
+    return val_acc, model_save, best_acc, losses
 
 
 def trainer(num_folds=5):
@@ -92,35 +88,39 @@ def trainer(num_folds=5):
     edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
     processed_data = ProcessData()
     X = processed_data.X
-    for column in processed_data.Y:
-        print(column)
-        y = processed_data.Y[column]
-        test_size = int(0.2*np.sum(y))
-        # y = processed_data.Y
-        edges = processed_data.get_edges(edgelist_file)
+    with open("Best-Models-" + str(datetime.now())[:19].replace(' ', '-') + '.txt', \
+         'w') as best_file:
+        for column in processed_data.Y:
+            # print(column)
+            y = processed_data.Y[column]
+            test_size = int(0.2*np.sum(y))
+            # y = processed_data.Y
+            edges = processed_data.get_edges(edgelist_file)
 
-        X = torch.tensor(X.values, dtype=torch.float)
-        y = torch.tensor(y.values, dtype=torch.long)
-        edges = torch.tensor(edges.values, dtype=torch.long)
+            X = torch.tensor(X.values, dtype=torch.float)
+            y = torch.tensor(y.values, dtype=torch.long)
+            edges = torch.tensor(edges.values, dtype=torch.long)
 
-        # Set up train and test sets:
-        data_generator = utils.load_pyg(X, edges, y, folds=num_folds, test_size=test_size)
+            # Set up train and test sets:
+            data_generator = utils.load_pyg(X, edges, y, folds=num_folds, test_size=test_size)
 
-        # 5-fold cross validation
-        val_accs, models, accs = [], [], []
-        for idx, loader in enumerate(data_generator):
-            print('fold number:', idx)
-            val_acc, model, best_acc = train(loader)
-            val_accs.append(val_acc)
-            models.append(model)
-            accs.append(best_acc)
+            # 5-fold cross validation
+            val_accs, models, accs = [], [], []
+            with open(column + "-" + str(datetime.now())[:19].replace(' ', '-') + '.txt', 'w') as f:
+                for idx, loader in enumerate(data_generator):
+                    print('fold number:', idx)
+                    val_acc, model, best_acc, losses = train(loader)
+                    f.write(str([losses, val_acc]))
+                    val_accs.append(val_acc)
+                    models.append(model)
+                    accs.append(best_acc)
 
-        best_model = models[np.argmax(accs)]
-        print('Best model accuracy:')
-        acc = get_acc(model, loader, is_val=False)
-        print(acc)
+            best_model = models[np.argmax(accs)]
+            print('Best model accuracy:')
+            acc = get_acc(model, loader, is_val=False)
+            print(acc)
+            best_file.write(column+"\t"+str(acc))
 
-        return val_accs
 
 
 if __name__ == '__main__':
