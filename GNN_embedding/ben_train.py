@@ -88,6 +88,7 @@ def trainer(num_folds=5):
     edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
     processed_data = ProcessData()
     X = processed_data.X
+    X = torch.tensor(X.values, dtype=torch.float)
     with open("Best-Models_" + str(datetime.now())[:19].replace(' ', '-') + '.txt', \
          'w') as best_file:
         for column in processed_data.Y:
@@ -97,7 +98,6 @@ def trainer(num_folds=5):
             # y = processed_data.Y
             edges = processed_data.get_edges(edgelist_file)
 
-            X = torch.tensor(X.values, dtype=torch.float)
             y = torch.tensor(y, dtype=torch.long)
             edges = torch.tensor(edges.values, dtype=torch.long)
 
