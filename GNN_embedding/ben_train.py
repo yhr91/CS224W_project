@@ -1,5 +1,8 @@
 from typing import Any
+"""
 
+@author: Ben, Yusuf, Kendrick
+"""
 import torch
 import torch.nn.functional as F
 from torch_geometric.data import DataLoader
@@ -89,34 +92,35 @@ def trainer(num_folds=5):
     edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
     processed_data = ProcessData()
     X = processed_data.X
-    y = processed_data.Y["Parkinson Disease"].tolist()
-    # y = processed_data.Y
-    print(processed_data.combined)
-    print(processed_data.Y["Parkinson Disease"])
-    edges = processed_data.get_edges(edgelist_file)
+    for column in processed_data.Y:
+        print(column)
+        y = processed_data.Y[column]
+        test_size = int(0.2*np.sum(y))
+        # y = processed_data.Y
+        edges = processed_data.get_edges(edgelist_file)
 
-    X = torch.tensor(X.values, dtype=torch.float)
-    y = torch.tensor(y, dtype=torch.long)
-    edges = torch.tensor(edges.values, dtype=torch.long)
+        X = torch.tensor(X.values, dtype=torch.float)
+        y = torch.tensor(y.values, dtype=torch.long)
+        edges = torch.tensor(edges.values, dtype=torch.long)
 
-    # Set up train and test sets:
-    data_generator = utils.load_pyg(X, edges, y, folds=num_folds)
+        # Set up train and test sets:
+        data_generator = utils.load_pyg(X, edges, y, folds=num_folds, test_size=test_size)
 
-    # 5-fold cross validation
-    val_accs, models, accs = [], [], []
-    for idx, loader in enumerate(data_generator):
-        print('fold number:', idx)
-        val_acc, model, best_acc = train(loader)
-        val_accs.append(val_acc)
-        models.append(model)
-        accs.append(best_acc)
+        # 5-fold cross validation
+        val_accs, models, accs = [], [], []
+        for idx, loader in enumerate(data_generator):
+            print('fold number:', idx)
+            val_acc, model, best_acc = train(loader)
+            val_accs.append(val_acc)
+            models.append(model)
+            accs.append(best_acc)
 
-    best_model = models[np.argmax(accs)]
-    print('Best model accuracy:')
-    acc = get_acc(model, loader, is_val=False)
-    print(acc)
+        best_model = models[np.argmax(accs)]
+        print('Best model accuracy:')
+        acc = get_acc(model, loader, is_val=False)
+        print(acc)
 
-    return val_accs
+        return val_accs
 
 
 if __name__ == '__main__':
