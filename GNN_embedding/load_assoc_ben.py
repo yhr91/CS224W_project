@@ -56,7 +56,9 @@ class ProcessData:
 
     def create_x_and_y(self):
         protein_df = self.create_protein_df()
+        print(protein_df)
         disease_df = self.create_disease_df()
+        print(disease_df)
         combined = protein_df.append(disease_df, sort=True)
         combined.Features.fillna(1.0, inplace=True)
         combined.fillna(0.0, inplace=True)
