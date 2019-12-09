@@ -8,20 +8,21 @@ Created on Thurs Nov 7 21:27:10 2019
 util functions
 """
 
-import pandas as pd
+
 import numpy as np
 from sklearn.model_selection import StratifiedKFold, train_test_split
 import torch
 from torch_geometric.data import Data, DataLoader
+from sklearn.metrics import f1_score
 
 
 # This version of load pyg is designed to work with recall@100 metric
 # It does not require an even class split in the test set
-def load_pyg_recall(X, edges, y, folds=5, test_size=0.2):
+def load_pyg(X, edges, y, folds=5, test_size=0.2):
 
     # First identify the test set
     indices = np.arange(len(X))
-    train_idx,test_idx = train_test_split(indices, test_size=test_size,
+    _,test_idx = train_test_split(indices, test_size=test_size,
                                              stratify=y, random_state=40)
 
     # Now use the remainder of the data to create train and val sets
@@ -31,34 +32,7 @@ def load_pyg_recall(X, edges, y, folds=5, test_size=0.2):
 
         train_mask = [int(i in train_idx and i not in test_idx) for i in range(len(X))]
         val_mask = [int(i in val_idx and i not in test_idx) for i in range(len(y))]
-        test_mask = [int(i in test_idx) for i in range(len(X))]
-
-        data.train_mask = torch.tensor(train_mask, dtype=torch.bool)
-        data.val_mask = torch.tensor(val_mask, dtype=torch.bool)
-        data.test_mask = torch.tensor(test_mask, dtype=torch.bool)
-
-        loader = DataLoader([data], batch_size=32, shuffle=True)
-        yield loader
-
-
-# This version of load_pyg was designed for a 50:50 class split in test and val sets each
-def load_pyg(X, edges, y, folds=5, test_size=5):
-
-    # First identify the test set
-    np.random.seed(20) # to make sure the test set is always the same
-    ones = np.random.choice(np.where(y.cpu().numpy() == 1)[0], size=test_size, replace=False)
-    np.random.seed(30)
-    zeros = np.random.choice(np.where(y.cpu().numpy() == 0)[0], size=test_size, replace=False)
-    test_idx = np.concatenate([ones, zeros])
-
-    # Now use the remainder of the data to create train and val sets
-    kf = StratifiedKFold(n_splits=folds, random_state=2)
-    for train_idx, val_idx in kf.split(X, y):
-        data = Data(x=X, edge_index=edges.t().contiguous(), y=y)
-
-        train_mask = [int(i in train_idx and i not in test_idx) for i in range(len(X))]
-        val_mask = [int(i in val_idx and i not in test_idx) for i in range(len(y))]
-        val_mask = sample_from_mask(val_mask, y, test_size)
+        #val_mask = sample_from_mask(val_mask, y, int(0.1*y.sum().numpy()))
         test_mask = [int(i in test_idx) for i in range(len(X))]
 
         data.train_mask = torch.tensor(train_mask, dtype=torch.bool)
@@ -85,3 +59,43 @@ def sample_from_mask(mask, y, k):
             if counts[y_[i]] > k:
                 mask[i] = False
     return mask
+
+
+# Evaluates the validation, test accuracy
+def get_acc(model, loader, is_val=False, k=100):
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    probs = []
+    model.eval()
+    preds, trues = [], []
+    for data in loader:
+        data = data.to(device)
+        with torch.no_grad():
+            output = model(data)
+            prob = output.cpu().numpy()[:,1]
+            pred = output.max(dim=1)[1]
+            label = data.y
+
+            # Prints predicted class distribution
+            print(np.unique(pred.cpu(), return_counts=True)[1])
+
+    if (is_val):
+        probs.extend(prob[data.val_mask.cpu()])
+        preds.extend(pred[data.val_mask.cpu()].cpu().numpy())
+        trues.extend(label[data.val_mask.cpu()].cpu().numpy())
+    else:
+        probs.extend(prob[data.test_mask.cpu()])
+        preds.extend(pred[data.test_mask].cpu().numpy())
+        trues.extend(label[data.test_mask].cpu().numpy())
+
+    res = {}
+    res['f1'] = f1_score(trues,preds)
+    correct = np.sum(np.array(trues)[np.argsort(probs)[-k:]])
+    res['recall'] = correct/np.sum(trues)
+    return res
+
+
+# Weighs the loss function
+def get_weight(x_, device):
+    a, b = np.unique(x_.cpu().numpy(), return_counts=True)[1]
+    return torch.tensor([(1 - a / (a + b)), (1 - b / (a + b))],
+                        device = device)

@@ -63,7 +63,7 @@ def train(loader, epochs=100):
             batch = batch.to(device)
             optimizer.zero_grad()
             out = model(batch)
-            weight = get_weight(batch.y, device=device)
+            weight = utils.get_weight(batch.y, device=device)
             loss = criterion(out[batch.train_mask],
                              batch.y[batch.train_mask],weight=weight)
             loss.backward()
@@ -72,7 +72,7 @@ def train(loader, epochs=100):
             print('loss on epoch', epoch, 'is', loss.item())
 
             if epoch % 1 == 0:
-                val_acc.append(get_acc(model, loader, is_val=True))
+                val_acc.append(utils.get_acc(model, loader, is_val=True)['f1'])
                 print('Validation:', val_acc[-1])
                 if (val_acc[-1] == np.max(val_acc)):
                     model_save = copy.deepcopy(model.cpu())
@@ -94,7 +94,7 @@ def trainer(num_folds=5):
         for column in processed_data.Y:
             # print(column)
             y = processed_data.Y[column].tolist()
-            test_size = int(0.2*np.sum(y))
+
             # y = processed_data.Y
             edges = processed_data.get_edges(edgelist_file)
 
@@ -117,7 +117,7 @@ def trainer(num_folds=5):
 
                 best_model = models[np.argmax(accs)]
                 print('Best model accuracy:')
-                acc = get_acc(model, loader, is_val=False)
+                acc = utils.get_acc(model, loader, is_val=False)
                 print(acc)
                 best_file.write(column+"\t"+str(acc)+'\t'+best_model)
 
