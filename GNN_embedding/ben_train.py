@@ -106,9 +106,7 @@ def trainer(num_folds=5):
 
             # 5-fold cross validation
             val_accs, models, accs = [], [], []
-            with open(column.replace(' ','-') + "_" + str(datetime.now())[:19].replace(' ',
-                                                                                   '-') + '.txt',
-                      'w') as f:
+            with open(column.replace(' ','-').replace('/', '-') + "_" + str(datetime.now())[:19].replace(' ','-') + '.txt','w') as f:
                 for idx, loader in enumerate(data_generator):
                     print('fold number:', idx)
                     val_acc, model, best_acc, losses = train(loader)
@@ -121,7 +119,7 @@ def trainer(num_folds=5):
                 print('Best model accuracy:')
                 acc = get_acc(model, loader, is_val=False)
                 print(acc)
-                best_file.write(column+"\t"+str(acc))
+                best_file.write(column+"\t"+str(acc)+'\t'+best_model)
 
 
 
