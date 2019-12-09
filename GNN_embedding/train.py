@@ -15,8 +15,6 @@ from sklearn.metrics import f1_score
 
 def get_acc(model, loader, is_val=False):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    correct = 0
-    total = 0
     model.eval()
     preds, trues = [], []
     for data in loader:
@@ -35,6 +33,7 @@ def get_acc(model, loader, is_val=False):
         preds.extend(pred[data.test_mask].cpu().numpy())
         trues.extend(label[data.test_mask].cpu().numpy())
 
+    print((np.sum(np.array(preds) == np.array(trues)))/len(preds))
     return f1_score(trues,preds)
 
 
@@ -44,6 +43,7 @@ def get_weight(x_, device):
                         device = device)
 
 def train(loader, epochs=100):
+
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model = GNN(3, 32, 2, 'GCNConv')
     model = model.to(device)
@@ -89,13 +89,16 @@ def trainer(num_folds=5):
     X = load_entrez.get_X(X_file)
     y = load_entrez.get_y(X, y_file)
     edges = load_entrez.get_edges(X, edgelist_file)
+    #edges[0] = np.random.choice(np.unique(edges[0].values),len(edges),replace=True)
+    #edges[1] = np.random.choice(np.unique(edges[1].values), len(edges),replace=True)
 
     # Set up dataloaders
+    #X = torch.tensor(np.ones(len(y)),dtype=torch.float)
     X = torch.tensor(X.iloc[:, 1:4].values, dtype=torch.float)
     y = torch.tensor(y, dtype=torch.long)
     edges = torch.tensor(edges.values, dtype=torch.long)
 
-    data_generator = utils.load_pyg(X, edges, y, folds=num_folds)
+    data_generator = utils.load_pyg_(X, edges, y, folds=num_folds)
 
     # 5-fold cross validation
     val_accs, models, accs = [], [], []
@@ -115,4 +118,4 @@ def trainer(num_folds=5):
 
 
 if __name__ == '__main__':
-    trainer()
+    x = trainer()
