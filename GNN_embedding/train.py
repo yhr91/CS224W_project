@@ -43,24 +43,7 @@ def get_weight(x_, device):
     return torch.tensor([(1 - a / (a + b)), (1 - b / (a + b))],
                         device = device)
 
-
-# Identifies k nodes form each class within a given mask and removes the rest
-def sample_from_mask(mask, data, k):
-    counts = {}
-    counts[0] = 0
-    counts[1] = 0
-    for i, val in enumerate(mask):
-        if val == True:
-            if data.y[i] == 0:
-                counts[0] += 1
-            else:
-                counts[1] += 1
-            if counts[data.y[i].item()] > k:
-                mask[i] = False
-    return mask
-
-
-def train(loader, epochs=50):
+def train(loader, epochs=100):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model = GNN(3, 32, 2, 'GCNConv')
     model = model.to(device)
@@ -84,7 +67,7 @@ def train(loader, epochs=50):
             losses.append(loss.item())
             print('loss on epoch', epoch, 'is', loss.item())
 
-            if epoch % 5 == 0:
+            if epoch % 1 == 0:
                 val_acc.append(get_acc(model, loader, is_val=True))
                 print('Validation:', val_acc[-1])
                 if (val_acc[-1] == np.max(val_acc)):

@@ -11,9 +11,9 @@ util functions
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import StratifiedKFold
-
 import torch
 from torch_geometric.data import Data, DataLoader
+
 
 def load_pyg(X, edges, y, folds=5, test_size=50):
 
@@ -31,6 +31,7 @@ def load_pyg(X, edges, y, folds=5, test_size=50):
 
         train_mask = [int(i in train_idx and i not in test_idx) for i in range(len(X))]
         val_mask = [int(i in val_idx and i not in test_idx) for i in range(len(y))]
+        val_mask = sample_from_mask(val_mask, y, test_size)
         test_mask = [int(i in test_idx) for i in range(len(X))]
 
         data.train_mask = torch.tensor(train_mask, dtype=torch.bool)
@@ -40,3 +41,20 @@ def load_pyg(X, edges, y, folds=5, test_size=50):
         loader = DataLoader([data], batch_size=32, shuffle=True)
         yield loader
 
+
+# Identifies k nodes form each class within a given mask and removes
+# all other nodes from the mask
+def sample_from_mask(mask, y, k):
+    counts = {}
+    counts[0] = 0
+    counts[1] = 0
+    y_ = y.cpu().numpy()
+    for i, val in enumerate(mask):
+        if val:
+            if y_[i] == 0:
+                counts[0] += 1
+            else:
+                counts[1] += 1
+            if counts[y_[i]] > k:
+                mask[i] = False
+    return mask
