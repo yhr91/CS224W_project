@@ -13,7 +13,7 @@ import utils
 from sklearn.metrics import f1_score
 
 
-def get_acc(model, loader, is_val=False, f1=True):
+def get_acc(model, loader, is_val=False):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     correct = 0
     total = 0
@@ -28,17 +28,14 @@ def get_acc(model, loader, is_val=False, f1=True):
             # Prints predicted class distribution
             print(np.unique(pred.cpu(), return_counts=True)[1])
 
-        if f1:
-            preds.extend(pred.cpu().numpy())
-            trues.extend(label.cpu().numpy())
-        else:
-            correct += pred[data.test_mask].eq(label[data.test_mask]).sum().item()
-            total += torch.sum(data.test_mask).item()
-
-    if f1:
-        return f1_score(trues,preds)
+    if (is_val):
+        preds.extend(pred[data.val_mask].cpu().numpy())
+        trues.extend(label[data.val_mask].cpu().numpy())
     else:
-        return correct / total
+        preds.extend(pred[data.test_mask].cpu().numpy())
+        trues.extend(label[data.test_mask].cpu().numpy())
+
+    return f1_score(trues,preds)
 
 
 def get_weight(x_, device):
@@ -110,11 +107,11 @@ def trainer(num_folds=5):
     y = load_entrez.get_y(X, y_file)
     edges = load_entrez.get_edges(X, edgelist_file)
 
+    # Set up dataloaders
     X = torch.tensor(X.iloc[:, 1:4].values, dtype=torch.float)
     y = torch.tensor(y, dtype=torch.long)
     edges = torch.tensor(edges.values, dtype=torch.long)
 
-    # Set up train and test sets:
     data_generator = utils.load_pyg(X, edges, y, folds=num_folds)
 
     # 5-fold cross validation
@@ -127,9 +124,9 @@ def trainer(num_folds=5):
         accs.append(best_acc)
 
     best_model = models[np.argmax(accs)]
-    # print('Best model accuracy:')
-    # acc = get_acc(model, test_set, is_val = False)
-    # print(acc)
+    print('Best model accuracy:')
+    acc = get_acc(model, loader, is_val = False)
+    print(acc)
 
     return val_accs
 
