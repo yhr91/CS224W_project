@@ -83,7 +83,7 @@ def train(loader, epochs=100):
 def trainer(num_folds=5):
     # X_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/ForAnalysis/X/TCGA_GTEX_GeneExpression.csv?raw=true'
     # y_file = 'https://github.com/yhr91/CS224W_project/raw/master/Data/ForAnalysis/Y/NCG_cancergenes_list.txt'
-    edgelist_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/PP-Decagon_ppi.csv?raw=true'
+    # edgelist_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/PP-Decagon_ppi.csv?raw=true'
     # y_file = '../dataset_collection/DG-AssocMiner_miner-disease-gene.tsv'
     edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
     processed_data = ProcessData()
@@ -117,11 +117,11 @@ def trainer(num_folds=5):
                     models.append(model)
                     accs.append(best_acc)
 
-            best_model = models[np.argmax(accs)]
-            print('Best model accuracy:')
-            acc = get_acc(model, loader, is_val=False)
-            print(acc)
-            best_file.write(column+"\t"+str(acc))
+                best_model = models[np.argmax(accs)]
+                print('Best model accuracy:')
+                acc = get_acc(model, loader, is_val=False)
+                print(acc)
+                best_file.write(column+"\t"+str(acc))
 
 
 
