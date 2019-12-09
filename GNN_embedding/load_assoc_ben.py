@@ -14,17 +14,13 @@ import pathlib
 
 class ProcessData:
     def __init__(self):
-        # self.disease_gene_path = pathlib.Path(__file__).parents[0]
-        # print(self.disease_gene_path)
         self.disease = set()
         self.gene_to_disease_dict = defaultdict(set)
         self.disease_to_genes_dict = defaultdict(set)
+        self.protein_df = self.create_protein_df()
         self.load_diseases()
         self.X, self.Y, self.combined = self.create_x_and_y()
-        # self.check_overlap()
-        # print(self.x_values)
-        # print(self.y_values)
-        # self.get_X()
+
 
     def load_diseases(self):
         with open("DG-AssocMiner_miner-disease-gene.tsv", 'r') as f:
@@ -34,12 +30,14 @@ class ProcessData:
                     continue
                 disease = line[1].strip('"')
                 gene = line[2]
+                if gene not in self.protein_df.index:
+                    continue
                 self.gene_to_disease_dict[gene].add(disease)
                 self.disease_to_genes_dict[disease].add(gene)
                 self.disease.add(disease)
 
     def create_disease_df(self):
-        start = np.zeros((len(self.gene_to_disease_dict), len(self.disease)))
+        start = np.empty((len(self.gene_to_disease_dict), len(self.disease)))
         df = pd.DataFrame(start, index=self.gene_to_disease_dict.keys(), columns=self.disease)
         for key in self.gene_to_disease_dict:
             diseases = self.gene_to_disease_dict[key]
@@ -55,11 +53,9 @@ class ProcessData:
         return df
 
     def create_x_and_y(self):
-        protein_df = self.create_protein_df()
-        print(protein_df)
+        protein_df = self.protein_df
         disease_df = self.create_disease_df()
-        print(disease_df)
-        combined = protein_df.append(disease_df, sort=True)
+        combined = pd.concat([protein_df, disease_df], axis=1, sort=False)
         combined.Features.fillna(1.0, inplace=True)
         combined.fillna(0.0, inplace=True)
         x = combined[['Features']]
