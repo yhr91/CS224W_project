@@ -88,17 +88,17 @@ def trainer(num_folds=5):
     edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
     processed_data = ProcessData()
     X = processed_data.X
-    with open("Best-Models-" + str(datetime.now())[:19].replace(' ', '-') + '.txt', \
+    with open("Best-Models_" + str(datetime.now())[:19].replace(' ', '-') + '.txt', \
          'w') as best_file:
         for column in processed_data.Y:
             # print(column)
-            y = processed_data.Y[column]
+            y = processed_data.Y[column].tolist()
             test_size = int(0.2*np.sum(y))
             # y = processed_data.Y
             edges = processed_data.get_edges(edgelist_file)
 
             X = torch.tensor(X.values, dtype=torch.float)
-            y = torch.tensor(y.values, dtype=torch.long)
+            y = torch.tensor(y, dtype=torch.long)
             edges = torch.tensor(edges.values, dtype=torch.long)
 
             # Set up train and test sets:
@@ -106,7 +106,9 @@ def trainer(num_folds=5):
 
             # 5-fold cross validation
             val_accs, models, accs = [], [], []
-            with open(column + "-" + str(datetime.now())[:19].replace(' ', '-') + '.txt', 'w') as f:
+            with open(column.replace(' ','-') + "_" + str(datetime.now())[:19].replace(' ',
+                                                                                   '-') + '.txt',
+                      'w') as f:
                 for idx, loader in enumerate(data_generator):
                     print('fold number:', idx)
                     val_acc, model, best_acc, losses = train(loader)
