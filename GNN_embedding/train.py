@@ -1,32 +1,50 @@
+from typing import Any
+
 import torch
 import torch.nn.functional as F
 from torch_geometric.data import DataLoader
 
 import numpy as np
 import load_entrez
-import load_assoc
+#import load_assoc
 import copy
 from neural_net import GNN
 import utils
+from sklearn.metrics import f1_score
 
-def get_acc(model, loader, is_val = False):
+
+def get_acc(model, loader, is_val=False, f1=True):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     correct = 0
     total = 0
     model.eval()
+    preds, trues = [], []
     for data in loader:
         data = data.to(device)
         with torch.no_grad():
             pred = model(data).max(dim=1)[1]
             label = data.y
+
+            # Prints predicted class distribution
             print(np.unique(pred.cpu(), return_counts=True)[1])
-        correct += pred[data.test_mask].eq(label[data.test_mask]).sum().item()
-        total += torch.sum(data.test_mask).item()
-    return correct / total
+
+        if f1:
+            preds.extend(pred.cpu().numpy())
+            trues.extend(label.cpu().numpy())
+        else:
+            correct += pred[data.test_mask].eq(label[data.test_mask]).sum().item()
+            total += torch.sum(data.test_mask).item()
+
+    if f1:
+        return f1_score(trues,preds)
+    else:
+        return correct / total
+
 
 def get_weight(x_):
     a, b = np.unique(x_, return_counts=True)[1]
     return torch.tensor([(1 - a / (a + b)), (1 - b / (a + b))])
+
 
 # Identifies k nodes form each class within a given mask and removes the rest
 def sample_from_mask(mask, data, k):
@@ -78,7 +96,8 @@ def train(loader, weight=None, epochs=50):
         f.write(str([losses, val_acc]))
     return val_acc, model_save, best_acc
 
-def trainer(num_folds = 5):
+
+def trainer(num_folds=5):
     X_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/ForAnalysis/X/TCGA_GTEX_GeneExpression.csv?raw=true'
     y_file = 'https://github.com/yhr91/CS224W_project/raw/master/Data/ForAnalysis/Y/NCG_cancergenes_list.txt'
     edgelist_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/PP-Decagon_ppi.csv?raw=true'
@@ -105,11 +124,12 @@ def trainer(num_folds = 5):
         accs.append(best_acc)
 
     best_model = models[np.argmax(accs)]
-    #print('Best model accuracy:')
-    #acc = get_acc(model, test_set, is_val = False)
-    #print(acc)
+    # print('Best model accuracy:')
+    # acc = get_acc(model, test_set, is_val = False)
+    # print(acc)
 
     return val_accs
+
 
 if __name__ == '__main__':
     trainer()
