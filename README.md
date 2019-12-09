@@ -8,11 +8,11 @@ Developing new methods for embedding these enriched graphs within a shared space
 
 ### Disease node classification leaderboard
 
-| Model | Graph | Features | MRR | Accuracy* |
+| Model | Graph | Features | MRR | F1* |
 | --- | --- | --- | --- | --- |
 | Diamond | PP-Decagon | None | 0.11 | --- |
 | GCN | PP-Decagon | None | --- | --- |
-| GCN | PP-Decagon | GTex | --- | 0.54 |
+| GCN | PP-Decagon | GTex | --- | 0.68 |
 | GCN | PP-Decagon | UniProt | --- | --- |
 | GCN | PP-Decagon + GNBR | None | --- | --- |
 | GCN | PP-Decagon + GNBR | GTex+ UniProt | --- | --- |
