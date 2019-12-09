@@ -41,9 +41,10 @@ def get_acc(model, loader, is_val=False, f1=True):
         return correct / total
 
 
-def get_weight(x_):
-    a, b = np.unique(x_, return_counts=True)[1]
-    return torch.tensor([(1 - a / (a + b)), (1 - b / (a + b))])
+def get_weight(x_, device):
+    a, b = np.unique(x_.cpu().numpy(), return_counts=True)[1]
+    return torch.tensor([(1 - a / (a + b)), (1 - b / (a + b))],
+                        device = device)
 
 
 # Identifies k nodes form each class within a given mask and removes the rest
@@ -62,7 +63,7 @@ def sample_from_mask(mask, data, k):
     return mask
 
 
-def train(loader, weight=None, epochs=50):
+def train(loader, epochs=50):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model = GNN(3, 32, 2, 'GCNConv')
     model = model.to(device)
@@ -78,7 +79,9 @@ def train(loader, weight=None, epochs=50):
             batch = batch.to(device)
             optimizer.zero_grad()
             out = model(batch)
-            loss = criterion(out[batch.train_mask], batch.y[batch.train_mask])
+            weight = get_weight(batch.y, device=device)
+            loss = criterion(out[batch.train_mask],
+                             batch.y[batch.train_mask],weight=weight)
             loss.backward()
             optimizer.step()
             losses.append(loss.item())
