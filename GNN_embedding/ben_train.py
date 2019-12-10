@@ -17,7 +17,7 @@ import utils
 from sklearn.metrics import f1_score
 
 
-def train(loader, epochs=100):
+def train(loader, epochs=200):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model = GNN(1, 32, 2, 'GCNConv')
     model = model.to(device)
@@ -56,23 +56,24 @@ def trainer(num_folds=5):
     # edgelist_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/PP-Decagon_ppi.csv?raw=true'
     # y_file = '../dataset_collection/DG-AssocMiner_miner-disease-gene.tsv'
     edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
-    processed_data = ProcessData()
+    processed_data = ProcessData(edgelist_file)
     X = processed_data.X
     X = torch.tensor(X.values, dtype=torch.float)
     curr_results = {}
     for ind, column in enumerate(processed_data.Y):
 
-        if ind % 100 == 0: # write 100 columns to each file, so if it fails then it's ok
+        if ind > 0 and ind % 100 == 0: # write 100 columns to each file, so if it fails then it's ok
             dt = str(datetime.now())[8:19].replace(' ', '-')
             curr_file = open(f'bensmodels/{dt}-{ind}-thru-{ind+100}.txt', 'w')
             curr_file.write(str(curr_results))
             curr_file.close()
+            curr_results = {}
 
         # print(column)
         y = processed_data.Y[column].tolist()
 
         # y = processed_data.Y
-        edges = processed_data.get_edges(edgelist_file)
+        edges = processed_data.get_edges()
 
         y = torch.tensor(y, dtype=torch.long)
         edges = torch.tensor(edges.values, dtype=torch.long)
