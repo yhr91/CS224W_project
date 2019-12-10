@@ -5,19 +5,15 @@ from typing import Any
 """
 import torch
 import torch.nn.functional as F
-from torch_geometric.data import DataLoader
-from datetime import datetime
 import numpy as np
-# import load_entrez
-#import load_assoc
 from load_assoc_ben import ProcessData
 import copy
 from neural_net import GNN
 import utils
+import matplotlib.pyplot as plt
 
 
-def train(loader, epochs=50):
-
+def train(loader, epochs=200):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model = GNN(1, 32, 2, 'GCNConv')
     model = model.to(device)
@@ -53,18 +49,21 @@ def train(loader, epochs=50):
 def trainer(num_folds=5):
     # X_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/ForAnalysis/X/TCGA_GTEX_GeneExpression.csv?raw=true'
     # y_file = 'https://github.com/yhr91/CS224W_project/raw/master/Data/ForAnalysis/Y/NCG_cancergenes_list.txt'
-    edgelist_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/PP-Decagon_ppi.csv?raw=true'
+    #edgelist_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/PP-Decagon_ppi.csv?raw=true'
+    edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
+    #edgelist_file = '../dataset_collection/Decagon_GNBR.csv'
     # y_file = '../dataset_collection/DG-AssocMiner_miner-disease-gene.tsv'
-    # edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
-    processed_data = ProcessData()
+
+    processed_data = ProcessData(edgelist_file)
     X = processed_data.X
     X = torch.tensor(X.values, dtype=torch.float)
+    plt.figure()
 
     for column in ['Parkinson Disease']:
         # print(column)
         y = processed_data.Y[column].tolist()
         # y = processed_data.Y
-        edges = processed_data.get_edges(edgelist_file)
+        edges = processed_data.get_edges()
 
         y = torch.tensor(y, dtype=torch.long)
         edges = torch.tensor(edges.values, dtype=torch.long)
@@ -78,6 +77,7 @@ def trainer(num_folds=5):
         for idx, loader in enumerate(data_generator):
             print('fold number:', idx)
             val_acc, model, best_acc, losses = train(loader)
+            plt.plot(val_acc)
             #f.write(str([losses, val_acc]))
             val_accs.append(val_acc)
             models.append(model)

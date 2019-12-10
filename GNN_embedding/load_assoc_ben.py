@@ -13,8 +13,9 @@ import pandas as pd
 import pathlib
 
 class ProcessData:
-    def __init__(self):
+    def __init__(self, edgelist_file):
         self.disease = set()
+        self.edgelist_file = edgelist_file
         self.gene_to_disease_dict = defaultdict(set)
         self.disease_to_genes_dict = defaultdict(set)
         self.protein_df = self.create_protein_df()
@@ -37,7 +38,7 @@ class ProcessData:
                 self.disease.add(disease)
 
     def create_disease_df(self):
-        start = np.empty((len(self.gene_to_disease_dict), len(self.disease)))
+        start = np.zeros((len(self.gene_to_disease_dict), len(self.disease)))
         df = pd.DataFrame(start, index=self.gene_to_disease_dict.keys(), columns=self.disease)
         for key in self.gene_to_disease_dict:
             diseases = self.gene_to_disease_dict[key]
@@ -46,7 +47,7 @@ class ProcessData:
         return df
 
     def create_protein_df(self):
-        network = nx.read_edgelist("PP-Decagon_ppi.csv", delimiter=',')
+        network = nx.read_edgelist(self.edgelist_file, delimiter=',')
         nodes = network.nodes()
         X = np.ones((len(nodes), 1))
         df = pd.DataFrame(X, index=nodes, columns=['Features'])
@@ -55,7 +56,8 @@ class ProcessData:
     def create_x_and_y(self):
         protein_df = self.protein_df
         disease_df = self.create_disease_df()
-        combined = pd.concat([protein_df, disease_df], axis=1, sort=False)
+        combined = protein_df.merge(disease_df, left_index=True,
+                                    right_index=True, how='outer')
         combined.Features.fillna(1.0, inplace=True)
         combined.fillna(0.0, inplace=True)
         x = combined[['Features']]
@@ -69,8 +71,8 @@ class ProcessData:
                 1]])) > 0:
                 print(pair[0]+" overlaps with "+pair[1])
 
-    def get_edges(self, edgelist_file):
-        edgelist = pd.read_csv(edgelist_file, header=None)
+    def get_edges(self):
+        edgelist = pd.read_csv(self.edgelist_file, header=None)
 
         # Remove edges for which we don't have entrez
         idx = np.logical_and(edgelist[0].isin(self.X.index.values),

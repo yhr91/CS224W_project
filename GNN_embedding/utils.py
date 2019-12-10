@@ -18,7 +18,7 @@ from sklearn.metrics import f1_score
 
 # This version of load pyg is designed to work with recall@100 metric
 # It does not require an even class split in the test set
-def load_pyg(X, edges, y, folds=5, test_size=0.2):
+def load_pyg(X, edges, y, folds=5, test_size=0.1):
 
     # First identify the test set
     indices = np.arange(len(X))
