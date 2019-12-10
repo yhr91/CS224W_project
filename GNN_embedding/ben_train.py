@@ -9,8 +9,8 @@ from torch_geometric.data import DataLoader
 from datetime import datetime
 import numpy as np
 # import load_entrez
-#import load_assoc
-from load_assoc_ben_with_features import ProcessData
+import load_assoc import ProcessData
+# from load_assoc_ben_with_features import ProcessData
 import copy
 from neural_net import GNN
 import utils
@@ -19,7 +19,7 @@ from sklearn.metrics import f1_score
 
 def train(loader, epochs=100):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    model = GNN(11, 32, 2, 'SAGEConv')
+    model = GNN(1, 32, 2, 'GCNConv')
     model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
     criterion = F.nll_loss
@@ -102,6 +102,7 @@ def trainer(num_folds=5):
         test_recall = utils.get_acc(best_model, loader, is_val=False)
         print(test_recall)
         curr_results[ind] = [val, test_recall]
+
 
 if __name__ == '__main__':
     trainer()
