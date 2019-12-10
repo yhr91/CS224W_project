@@ -9,7 +9,7 @@ from torch_geometric.data import DataLoader
 from datetime import datetime
 import numpy as np
 # import load_entrez
-import load_assoc import ProcessData
+from load_assoc import ProcessData
 # from load_assoc_ben_with_features import ProcessData
 import copy
 from neural_net import GNN
