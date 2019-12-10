@@ -56,7 +56,7 @@ def trainer(num_folds=5):
     # edgelist_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/PP-Decagon_ppi.csv?raw=true'
     # y_file = '../dataset_collection/DG-AssocMiner_miner-disease-gene.tsv'
     edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
-    processed_data = ProcessData()
+    processed_data = ProcessData(edgelist_file)
     X = processed_data.X
     X = torch.tensor(X.values, dtype=torch.float)
     curr_results = {}
@@ -73,7 +73,7 @@ def trainer(num_folds=5):
         y = processed_data.Y[column].tolist()
 
         # y = processed_data.Y
-        edges = processed_data.get_edges(edgelist_file)
+        edges = processed_data.get_edges()
 
         y = torch.tensor(y, dtype=torch.long)
         edges = torch.tensor(edges.values, dtype=torch.long)
