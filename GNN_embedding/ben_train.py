@@ -62,11 +62,12 @@ def trainer(num_folds=5):
     curr_results = {}
     for ind, column in enumerate(processed_data.Y):
 
-        if ind % 100 == 0: # write 100 columns to each file, so if it fails then it's ok
+        if ind > 0 and ind % 100 == 0: # write 100 columns to each file, so if it fails then it's ok
             dt = str(datetime.now())[8:19].replace(' ', '-')
             curr_file = open(f'bensmodels/{dt}-{ind}-thru-{ind+100}.txt', 'w')
             curr_file.write(str(curr_results))
             curr_file.close()
+            curr_results = {}
 
         # print(column)
         y = processed_data.Y[column].tolist()
