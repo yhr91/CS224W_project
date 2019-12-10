@@ -19,7 +19,7 @@ from sklearn.metrics import f1_score
 
 def train(loader, epochs=100):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    model = GNN(11, 32, 2, 'GCNConv')
+    model = GNN(11, 32, 2, 'SAGEConv')
     model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
     criterion = F.nll_loss
@@ -61,8 +61,7 @@ def trainer(num_folds=5):
     X = torch.tensor(X.values, dtype=torch.float)
     curr_results = {}
     for ind, column in enumerate(processed_data.Y):
-        if ind <= 500:
-            continue
+
         if (ind > 0 and ind % 100 == 0) or (ind == len(processed_data.Y.columns)-1): # write 100
         # columns to each file,
             # so if it
