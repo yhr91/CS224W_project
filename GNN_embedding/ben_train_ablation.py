@@ -13,7 +13,7 @@ import utils
 import matplotlib.pyplot as plt
 
 
-def train(loader, epochs=200):
+def train(loader, epochs=100):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model = GNN(11, 32, 2, 'GCNConv')
     model = model.to(device)

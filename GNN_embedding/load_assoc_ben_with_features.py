@@ -100,7 +100,7 @@ class ProcessData:
 
     def read_ID_file(self):
         with open(
-                "/Users/benjaminangulo/Documents/Stanford2019/CS224W/CS224W_project/UniProt/NCBI_to_UNIPROT.txt",
+                "NCBI_to_UNIPROT.txt",
                 'r') as f:
             for line in f.readlines()[1:]:
                 line = line.strip()
@@ -110,8 +110,7 @@ class ProcessData:
 
     # TODO normalize features
     def load_uniprot_features(self):
-        df = pd.read_pickle("/Users/benjaminangulo/Documents/Stanford2019/CS224W/CS224W_project"
-                            "/UniProt/uniprot_protein_features.pkl")
+        df = pd.read_pickle("uniprot_protein_features.pkl")
         df = df.fillna(0)
         # Convert to binary features (rather than some features being counts)
         # print(df.columns)
