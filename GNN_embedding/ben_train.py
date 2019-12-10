@@ -57,13 +57,13 @@ def trainer(num_folds=5):
     # y_file = '../dataset_collection/DG-AssocMiner_miner-disease-gene.tsv'
 
     # Decagon alone
-    edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
+    # edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
 
     # GNBR alone
     #edgelist_file = '../dataset_collection/GNBR-edgelist.csv'
 
     # Decagon+GNBR
-    #edgelist_file = '../dataset_collection/Decagon_GNBR.csv'
+    edgelist_file = '../dataset_collection/Decagon_GNBR.csv'
 
     # edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
     processed_data = ProcessData(edgelist_file)
