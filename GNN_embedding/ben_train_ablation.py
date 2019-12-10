@@ -6,7 +6,7 @@ from typing import Any
 import torch
 import torch.nn.functional as F
 import numpy as np
-from load_assoc_ben import ProcessData
+from load_assoc_ben_with_features import ProcessData
 import copy
 from neural_net import GNN
 import utils
@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 
 def train(loader, epochs=200):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    model = GNN(1, 32, 2, 'GCNConv')
+    model = GNN(11, 32, 2, 'GCNConv')
     model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
     criterion = F.nll_loss

@@ -11,9 +11,11 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import pathlib
+from sklearn.preprocessing import StandardScaler
 
 class ProcessData:
-    def __init__(self):
+    def __init__(self, edgelist_file):
+        self.edgelist_file = edgelist_file
         self.disease = set()
         self.conversions_dict = dict()
         self.read_ID_file()
@@ -60,23 +62,17 @@ class ProcessData:
         protein_df = self.protein_df
         disease_df = self.create_disease_df()
         combined = pd.concat([protein_df, disease_df], axis=1, sort=False)
-        # combined.Features.fillna(1.0, inplace=True)
         combined.fillna(0.0, inplace=True)
         x = combined.copy()
         y = combined
-        # print(x)
-        # print(y)
         drop_set = set()
         for column in x.columns:
             if column in self.disease:
                 drop_set.add(column)
         for drop in drop_set:
             x = x.drop(drop, axis=1)
-        # print(x.columns)
         for column in x.columns:
             y = y.drop(column, axis=1)
-        # print(x)
-        # print(y)
         return x,y, combined
 
     def check_overlap(self):
@@ -86,8 +82,8 @@ class ProcessData:
                 1]])) > 0:
                 print(pair[0]+" overlaps with "+pair[1])
 
-    def get_edges(self, edgelist_file):
-        edgelist = pd.read_csv(edgelist_file, header=None)
+    def get_edges(self):
+        edgelist = pd.read_csv(self.edgelist_file, header=None)
 
         # Remove edges for which we don't have entrez
         idx = np.logical_and(edgelist[0].isin(self.X.index.values),
@@ -140,10 +136,12 @@ class ProcessData:
                 drop_set.add(row)
         for dropped in drop_set:
             df = df.drop(dropped, axis=0)
-        # print(df)
         combined = pd.concat([df, self.protein_df], axis=1, sort=False)
-        # combined.drop('Features')
-        # print(combined.columns)
-        return df
+        combined.fillna(0, inplace=True)
+        # print(combined)
+        scaler = StandardScaler(copy=False)
+        scaler.fit_transform(combined)
+        # print(combined)
+        return combined
 
 # ProcessData()
