@@ -17,7 +17,7 @@ import utils
 from sklearn.metrics import f1_score
 
 
-def train(loader, epochs=100):
+def train(loader, epochs=200):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model = GNN(1, 32, 2, 'GCNConv')
     model = model.to(device)
