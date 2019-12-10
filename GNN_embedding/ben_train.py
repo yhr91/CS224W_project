@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any # what is this lol
 """
 
 @author: Ben, Yusuf, Kendrick
@@ -17,43 +17,13 @@ import utils
 from sklearn.metrics import f1_score
 
 
-def get_acc(model, loader, is_val=False):
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    correct = 0
-    total = 0
-    model.eval()
-    preds, trues = [], []
-    for data in loader:
-        data = data.to(device)
-        with torch.no_grad():
-            pred = model(data).max(dim=1)[1]
-            label = data.y
-
-            # Prints predicted class distribution
-            print(np.unique(pred.cpu(), return_counts=True)[1])
-
-    if (is_val):
-        preds.extend(pred[data.val_mask].cpu().numpy())
-        trues.extend(label[data.val_mask].cpu().numpy())
-    else:
-        preds.extend(pred[data.test_mask].cpu().numpy())
-        trues.extend(label[data.test_mask].cpu().numpy())
-
-    return f1_score(trues,preds)
-
-
-def get_weight(x_, device):
-    a, b = np.unique(x_.cpu().numpy(), return_counts=True)[1]
-    return torch.tensor([(1 - a / (a + b)), (1 - b / (a + b))],
-                        device = device)
-
 def train(loader, epochs=100):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model = GNN(1, 32, 2, 'GCNConv')
     model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
     criterion = F.nll_loss
-    val_acc = []
+    val_f1 = []
     losses = []
     model_save = copy.deepcopy(model.cpu())
 
@@ -72,12 +42,12 @@ def train(loader, epochs=100):
             print('loss on epoch', epoch, 'is', loss.item())
 
             if epoch % 1 == 0:
-                val_acc.append(utils.get_acc(model, loader, is_val=True)['f1'])
-                print('Validation:', val_acc[-1])
-                if (val_acc[-1] == np.max(val_acc)):
+                val_f1.append(utils.get_acc(model, loader, is_val=True)['f1'])
+                print('Validation:', val_f1[-1])
+                if (val_f1[-1] == np.max(val_f1)):
                     model_save = copy.deepcopy(model.cpu())
-                    best_acc = val_acc[-1]
-    return val_acc, model_save, best_acc, losses
+                    best_f1 = val_f1[-1]
+    return val_f1, model_save, best_f1, losses
 
 
 def trainer(num_folds=5):
@@ -89,39 +59,44 @@ def trainer(num_folds=5):
     processed_data = ProcessData()
     X = processed_data.X
     X = torch.tensor(X.values, dtype=torch.float)
-    with open("Best-Models_" + str(datetime.now())[:19].replace(' ', '-') + '.txt', \
-         'w') as best_file:
-        for column in processed_data.Y:
-            # print(column)
-            y = processed_data.Y[column].tolist()
+    curr_results = {}
+    for ind, column in enumerate(processed_data.Y):
 
-            # y = processed_data.Y
-            edges = processed_data.get_edges(edgelist_file)
+        if ind % 100 == 0: # write 100 columns to each file, so if it fails then it's ok
+            dt = str(datetime.now())[8:19].replace(' ', '-')
+            curr_file = open(f'bensmodels/{dt}-{ind}-thru-{ind+100}.txt', 'w')
+            curr_file.write(str(curr_results))
+            curr_file.close()
 
-            y = torch.tensor(y, dtype=torch.long)
-            edges = torch.tensor(edges.values, dtype=torch.long)
+        # print(column)
+        y = processed_data.Y[column].tolist()
 
-            # Set up train and test sets:
-            data_generator = utils.load_pyg(X, edges, y, folds=num_folds, test_size=test_size)
+        # y = processed_data.Y
+        edges = processed_data.get_edges(edgelist_file)
 
-            # 5-fold cross validation
-            val_accs, models, accs = [], [], []
-            with open(column.replace(' ','-').replace('/', '-') + "_" + str(datetime.now())[:19].replace(' ','-') + '.txt','w') as f:
-                for idx, loader in enumerate(data_generator):
-                    print('fold number:', idx)
-                    val_acc, model, best_acc, losses = train(loader)
-                    f.write(str([losses, val_acc]))
-                    val_accs.append(val_acc)
-                    models.append(model)
-                    accs.append(best_acc)
+        y = torch.tensor(y, dtype=torch.long)
+        edges = torch.tensor(edges.values, dtype=torch.long)
 
-                best_model = models[np.argmax(accs)]
-                print('Best model accuracy:')
-                acc = utils.get_acc(model, loader, is_val=False)
-                print(acc)
-                best_file.write(column+"\t"+str(acc)+'\t'+best_model)
+        # Set up train and test sets:
+        test_size = .1
+        data_generator = utils.load_pyg(X, edges, y, folds=num_folds, test_size=test_size)
 
+        # 5-fold cross validation
+        val = [] # val f1 scores
+        models = [] # save models for now
+        model_f1s = [] # save model recalls
 
+        for loader in data_generator:
+            val_f1, model, best_f1, _ = train(loader)
+            val.append(val_f1)
+            models.append(model)
+            model_f1s.append(best_f1)
+
+        best_model = models[np.argmax(model_f1s)]
+        print('Best model accuracy:')
+        test_recall = utils.get_acc(best_model, loader, is_val=False)
+        print(test_recall)
+        curr_results[ind] = [val, test_recall]
 
 if __name__ == '__main__':
     trainer()
