@@ -63,7 +63,7 @@ def trainer(num_folds=5):
     for ind, column in enumerate(processed_data.Y):
         if ind <= 500:
             continue
-        if (ind > 0 and ind % 100 == 0) or (ind == len(processed_data.Y.columns)): # write 100
+        if (ind > 0 and ind % 100 == 0) or (ind == len(processed_data.Y.columns)-1): # write 100
         # columns to each file,
             # so if it
             # fails then
