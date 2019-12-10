@@ -61,10 +61,13 @@ def trainer(num_folds=5):
     X = torch.tensor(X.values, dtype=torch.float)
     curr_results = {}
     for ind, column in enumerate(processed_data.Y):
-        if ind > 105:
-            break
-        if ind >= 0 and ind % 100 == 0: # write 100 columns to each file, so if it fails then
-            # it's ok
+        if ind <= 500:
+            continue
+        if (ind > 0 and ind % 100 == 0) or (ind == len(processed_data.Y.columns)): # write 100
+        # columns to each file,
+            # so if it
+            # fails then
+        # it's ok
             dt = str(datetime.now())[8:19].replace(' ', '-')
             curr_file = open(f'bensmodels/{dt}-{ind}-thru-{ind+100}.txt', 'w')
             curr_file.write(str(curr_results))
