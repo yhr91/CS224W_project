@@ -13,7 +13,6 @@ def main():
         f = open(os.path.join(directory, fname), 'r')
         d = ast.literal_eval(f.read())
         results.update(d)
-    print(results.keys())
     
     # print out the mean recall
     recalls = []
@@ -42,13 +41,15 @@ def main():
     weighted_recalls = []
     max_weighted_recall = float('-inf')
     max_weighted_recall_disease = None
-    print(len(Y.columns))
-    print(len(recalls))
-    for ind, col in enumerate(Y.columns):
+    for ind, col in enumerate(Y.columns[:-1]):
         non_weighted_recall = recalls[ind]
         weight = np.sum(Y[col]) / total
         weighted_recalls.append(non_weighted_recall * weight)
+        if max_weighted_recall < weighted_recalls[-1]:
+            max_weighted_recall = weighted_recalls[-1]
+            max_weighted_recall_disease = ind
     print(np.mean(weighted_recalls))
+    print(max_weighted_recall, max_weighted_recall_disease)
 
 if __name__ == '__main__':
     main()
