@@ -15,12 +15,13 @@ class VisualizeUniProtFeatures:
         self.disease_gene_sets = defaultdict(list)
         self.load_diseases()
         nx.relabel_nodes(self.G, self.conversion_dict, copy=False)
+        print(self.features.columns.values)
         # print(self.disease_gene_sets["Parkinson Disease"])
         for gene in self.disease_gene_sets["Parkinson Disease"]:
             if gene == '1620':
                 print("Yep")
             if self.conversion_dict.get(gene, None) is not None:
-                self.graph_network("Parkinson_Disease", self.conversion_dict[gene], 'Phosphoprotein')
+                self.graph_network("Parkinson_Disease", self.conversion_dict[gene], 'Ubiquitin')
 
 
 
