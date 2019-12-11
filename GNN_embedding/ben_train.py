@@ -70,7 +70,9 @@ def trainer(num_folds=5):
     X = processed_data.X
     X = torch.tensor(X.values, dtype=torch.float)
     curr_results = {}
+    print(list(processed_data.Y.columns))
     for ind, column in enumerate(processed_data.Y):
+        if ind != len(processed_data.Y.columns) - 1: continue
 
         if (ind > 0 and ind % 100 == 0) or (ind == len(processed_data.Y.columns)-1): # write 100
         # columns to each file,
