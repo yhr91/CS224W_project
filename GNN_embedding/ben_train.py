@@ -19,7 +19,7 @@ from sklearn.metrics import f1_score
 
 def train(loader, epochs=100):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    model = GNN(1, 32, 2, 'GCNConv')
+    model = GNN(1, 32, 2, 'SAGEConv')
     model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
     criterion = F.nll_loss
@@ -74,7 +74,7 @@ def trainer(num_folds=5):
     for ind, column in enumerate(processed_data.Y):
         if ind != len(processed_data.Y.columns) - 1: continue
 
-        if (ind > 0 and ind % 100 == 0) or (ind == len(processed_data.Y.columns)-1): # write 100
+        if (ind > 0 and ind % 100 == 0): # write 100
         # columns to each file,
             # so if it
             # fails then
@@ -115,6 +115,10 @@ def trainer(num_folds=5):
         print(test_recall)
         curr_results[ind] = [val, test_recall]
 
+    dt = str(datetime.now())[8:19].replace(' ', '-')
+    curr_file = open(f'bensmodels/{dt}-{ind}-thru-{ind+100}.txt', 'w')
+    curr_file.write(str(curr_results))
+    curr_file.close()
 
 if __name__ == '__main__':
     trainer()
