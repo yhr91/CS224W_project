@@ -19,7 +19,7 @@ from sklearn.metrics import f1_score
 
 def train(loader, epochs=100):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    model = GNN(1, 32, 2, 'GCNConv')
+    model = GNN(1, 32, 2, 'SAGEConv')
     model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
     criterion = F.nll_loss
@@ -53,17 +53,17 @@ def train(loader, epochs=100):
 def trainer(num_folds=5):
     # X_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/ForAnalysis/X/TCGA_GTEX_GeneExpression.csv?raw=true'
     # y_file = 'https://github.com/yhr91/CS224W_project/raw/master/Data/ForAnalysis/Y/NCG_cancergenes_list.txt'
-    edgelist_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/PP-Decagon_ppi.csv?raw=true'
+    #edgelist_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/PP-Decagon_ppi.csv?raw=true'
     # y_file = '../dataset_collection/DG-AssocMiner_miner-disease-gene.tsv'
 
     # Decagon alone
     # edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
 
     # GNBR alone
-    #edgelist_file = '../dataset_collection/GNBR-edgelist.csv'
+    edgelist_file = '../dataset_collection/GNBR-edgelist.csv'
 
     # Decagon+GNBR
-    edgelist_file = '../dataset_collection/Decagon_GNBR.csv'
+    #edgelist_file = '../dataset_collection/Decagon_GNBR.csv'
 
     # edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
     processed_data = ProcessData(edgelist_file)
