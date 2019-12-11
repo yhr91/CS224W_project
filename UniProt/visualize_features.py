@@ -21,7 +21,7 @@ class VisualizeUniProtFeatures:
             if gene == '1620':
                 print("Yep")
             if self.conversion_dict.get(gene, None) is not None:
-                self.graph_network("Parkinson_Disease", self.conversion_dict[gene], 'Ubiquitin')
+                self.graph_network("Parkinson_Disease", self.conversion_dict[gene], 'Lipoprotein')
 
 
 
