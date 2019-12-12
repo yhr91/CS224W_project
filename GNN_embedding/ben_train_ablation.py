@@ -50,6 +50,7 @@ def trainer(num_folds=5):
     # X_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/ForAnalysis/X/TCGA_GTEX_GeneExpression.csv?raw=true'
     # y_file = 'https://github.com/yhr91/CS224W_project/raw/master/Data/ForAnalysis/Y/NCG_cancergenes_list.txt'
     #edgelist_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/PP-Decagon_ppi.csv?raw=true'
+
     edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
     #edgelist_file = '../dataset_collection/Decagon_GNBR.csv'
     # y_file = '../dataset_collection/DG-AssocMiner_miner-disease-gene.tsv'
