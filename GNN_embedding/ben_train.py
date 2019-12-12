@@ -5,15 +5,13 @@ from typing import Any # what is this lol
 """
 import torch
 import torch.nn.functional as F
-from torch_geometric.data import DataLoader
 from datetime import datetime
 import numpy as np
-# import load_entrez
 #from load_assoc_ben import ProcessData
 from load_assoc_ben_with_features import ProcessData
-import copywhi
 from neural_net import GNN
 import utils
+import copy
 from sklearn.metrics import f1_score
 
 def feat_train():
@@ -52,7 +50,7 @@ def feat_train():
 
 def train(loader, epochs=100):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    model = GNN(1, 32, 2, 'SAGEConv')
+    model = GNN(11, 32, 2, 'SAGEConv')
     model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
     criterion = F.nll_loss
