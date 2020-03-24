@@ -60,3 +60,35 @@ class GNN(nn.Module):
         self.post_mp = self.post_mp.to(device)
         x = self.post_mp(x)
         return F.log_softmax(x, dim=1)
+
+
+class NN(nn.Module):
+    def __init__(self, in_dim=1, hidden_dim=1, out_dim=1):
+        super(Perceptron, self).__init__()
+        self.num_layers = 2
+        self.dropout = .2
+
+        self.layers = nn.ModuleList()
+        for l in range(self.num_layers - 1):
+            self.layers.append(self.build_model(hidden_dim, hidden_dim))
+
+        # post-message-passing
+        self.post_mp = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim), nn.Dropout(self.dropout),
+            nn.Linear(hidden_dim, out_dim))
+
+    def forward(self, data):
+        x, batch = data.x, data.batch
+
+        # for some reason, the layers were in CPU, so have to convert every time
+        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
+        for i in range(self.num_layers):
+            self.layers[i] = self.layers[i].to(device)
+            x = self.layers[i](x)
+            x = F.relu(x)
+            x = F.dropout(x, p=self.dropout, training=self.training)
+
+        self.post_mp = self.post_mp.to(device)
+        x = self.post_mp(x)
+        return F.log_softmax(x, dim=1)

@@ -76,7 +76,7 @@ def get_acc(model, loader, is_val=False, k=100):
             label = data.y
 
             # Prints predicted class distribution
-            print(np.unique(pred.cpu(), return_counts=True)[1])
+            #print(np.unique(pred.cpu(), return_counts=True)[1])
 
     if (is_val):
         probs.extend(prob[data.val_mask.cpu()])
