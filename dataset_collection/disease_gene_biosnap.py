@@ -9,7 +9,7 @@ class DGMiner(object):
         self.disease_ID_conversions_dict = self.load_disease_conversion_dict(
             'MedGen_UID_CUI_history.txt')
         self.gene_ID_conversions_dict = self.load_disease_conversion_dict('non_alt_loci_set.txt',
-                                                                  current=25, converted=18)
+            current=25, converted=18)
         self.graph = self.load_graph('DG-Miner_miner-disease-gene.tsv')
 
 

@@ -11,6 +11,7 @@ import numpy as np
 from load_assoc_ben_with_features import ProcessData
 from neural_net import GNN, NN
 import utils
+from torch.utils.tensorboard import SummaryWriter
 import copy
 from sklearn.metrics import f1_score
 
@@ -49,6 +50,9 @@ def feat_train(num_folds=5):
     return val_f1, model_save, best_f1, losses
 
 def train(loader, epochs=100):
+    writer = SummaryWriter('tensorboard_runs/gcn')
+    writer.add_scalar('he', 123)
+
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model = GNN(11, 32, 2, 'SAGEConv')
     model = model.to(device)
@@ -64,6 +68,7 @@ def train(loader, epochs=100):
             batch = batch.to(device)
             optimizer.zero_grad()
             out = model(batch)
+            writer.add_graph(model, batch)
             weight = utils.get_weight(batch.y, device=device)
             loss = criterion(out[batch.train_mask],
                              batch.y[batch.train_mask],weight=weight)
@@ -78,6 +83,8 @@ def train(loader, epochs=100):
                 if (val_f1[-1] == np.max(val_f1)):
                     model_save = copy.deepcopy(model.cpu())
                     best_f1 = val_f1[-1]
+    writer.flush()
+    writer.close()
     return val_f1, model_save, best_f1, losses
 
 
