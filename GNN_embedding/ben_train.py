@@ -1,7 +1,7 @@
-from typing import Any # what is this lol
 """
-
 @author: Ben, Yusuf, Kendrick
+
+Trains models to predict disease gene associations.
 """
 import torch
 import torch.nn.functional as F
@@ -13,47 +13,15 @@ from neural_net import GNN
 import utils
 from torch.utils.tensorboard import SummaryWriter
 import copy
-from sklearn.metrics import f1_score
 
-def feat_train():
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    #model = GNN(1, 32, 2, 'SAGEConv')
-    model = NN(11,32,2)
-
-    model = model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
-    criterion = F.nll_loss
-    val_f1 = []
-    losses = []
-    model_save = copy.deepcopy(model.cpu())
-
-    for epoch in range(epochs):
-        model.train()
-        for batch in loader:
-            batch = batch.to(device)
-            optimizer.zero_grad()
-            out = model(batch)
-            weight = utils.get_weight(batch.y, device=device)
-            loss = criterion(out[batch.train_mask],
-                             batch.y[batch.train_mask],weight=weight)
-            loss.backward()
-            optimizer.step()
-            losses.append(loss.item())
-            print('loss on epoch', epoch, 'is', loss.item())
-
-            if epoch % 1 == 0:
-                val_f1.append(utils.get_acc(model, loader, is_val=True)['f1'])
-                print('Validation:', val_f1[-1])
-                if (val_f1[-1] == np.max(val_f1)):
-                    model_save = copy.deepcopy(model.cpu())
-                    best_f1 = val_f1[-1]
-    return val_f1, model_save, best_f1, losses
 
 def train(loader, epochs=100):
     writer = SummaryWriter('tensorboard_runs/gcn')
     writer.add_scalar('he', 123)
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    # TODO add options for selectinng GCNconv vs SAGEconv etc.
+    # TODO add options for setting input and output size of GNN
     model = GNN(11, 32, 2, 'SAGEConv')
     model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
@@ -93,12 +61,12 @@ def trainer(num_folds=5):
     # y_file = 'https://github.com/yhr91/CS224W_project/raw/master/Data/ForAnalysis/Y/NCG_cancergenes_list.txt'
     #edgelist_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/PP-Decagon_ppi.csv?raw=true'
     # y_file = '../dataset_collection/DG-AssocMiner_miner-disease-gene.tsv'
-
+    # TODO create dictionary of data paths for options
     # Decagon alone
     # edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
 
     # GNBR alone
-    edgelist_file = '../dataset_collection/GNBR-edgelist.csv'
+    edgelist_file = './dataset_collection/GNBR-edgelist.csv'
 
     # Decagon+GNBR
     #edgelist_file = '../dataset_collection/Decagon_GNBR.csv'
@@ -107,13 +75,17 @@ def trainer(num_folds=5):
     processed_data = ProcessData(edgelist_file)
     X = processed_data.X
     X = torch.tensor(X.values, dtype=torch.float)
+    # TODO switch to using tensorboard for tracing results
     curr_results = {}
+
     for ind, column in enumerate(processed_data.Y):
+        # TODO what does the code below do???
         if (ind > 0 and ind % 100 == 0): # write 100
         # columns to each file,
             # so if it
             # fails then
         # it's ok
+            # Todo change to using tensorboard for this
             dt = str(datetime.now())[8:19].replace(' ', '-')
             curr_file = open(f'bensmodels/{dt}-{ind}-thru-{ind+100}.txt', 'w')
             curr_file.write(str(curr_results))
@@ -156,4 +128,5 @@ def trainer(num_folds=5):
     curr_file.close()
 
 if __name__ == '__main__':
+    # TODO functionality to read in arguments from command line.
     trainer()
