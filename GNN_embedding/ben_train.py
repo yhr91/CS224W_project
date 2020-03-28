@@ -7,8 +7,7 @@ import torch
 import torch.nn.functional as F
 from datetime import datetime
 import numpy as np
-#from load_assoc_ben import ProcessData
-from load_assoc_ben_with_features import ProcessData
+from load_assoc import ProcessData
 from neural_net import GNN
 import utils
 from torch.utils.tensorboard import SummaryWriter
@@ -104,7 +103,7 @@ def trainer(num_folds=5):
     #edgelist_file = '../dataset_collection/Decagon_GNBR.csv'
 
     # edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
-    processed_data = ProcessData(edgelist_file)
+    processed_data = ProcessData(edgelist_file, features=True)
     X = processed_data.X
     X = torch.tensor(X.values, dtype=torch.float)
     curr_results = {}

@@ -1,7 +1,7 @@
 import ast
 import os
 import numpy as np
-from load_assoc_ben import ProcessData
+from load_assoc import ProcessData
 
 def main():
     directory = 'bensmodels/GConv_GNBR_nofeat2'
@@ -32,7 +32,7 @@ def main():
     # edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
     # edgelist_file = '../dataset_collection/Decagon_GNBR.csv'
     edgelist_file = '../dataset_collection/GNBR-edgelist.csv'
-    data = ProcessData(edgelist_file)
+    data = ProcessData(edgelist_file, features=False)
     Y = data.Y
     # check total number of disease nodes
     total = 0

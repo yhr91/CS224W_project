@@ -6,7 +6,7 @@ from typing import Any
 import torch
 import torch.nn.functional as F
 import numpy as np
-from load_assoc_ben_with_features import ProcessData
+from load_assoc import ProcessData
 import copy
 from neural_net import GNN
 import utils
@@ -55,7 +55,7 @@ def trainer(num_folds=5):
     #edgelist_file = '../dataset_collection/Decagon_GNBR.csv'
     # y_file = '../dataset_collection/DG-AssocMiner_miner-disease-gene.tsv'
 
-    processed_data = ProcessData(edgelist_file)
+    processed_data = ProcessData(edgelist_file, features=True)
     X = processed_data.X
     X = torch.tensor(X.values, dtype=torch.float)
     plt.figure()
