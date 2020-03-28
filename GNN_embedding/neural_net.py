@@ -21,15 +21,17 @@ class GNN(nn.Module):
         self.model_type = model_type
         self.num_layers = 2
         self.dropout = .2
+        self.num_heads = 3
+        mult = self.num_heads if self.model_type == 'GATConv' else 1
 
         self.layers = nn.ModuleList()
         self.layers.append(self.build_model(in_dim, hidden_dim))
         for l in range(self.num_layers - 1):
-            self.layers.append(self.build_model(hidden_dim, hidden_dim))
+            self.layers.append(self.build_model(hidden_dim * mult, hidden_dim))
 
         # post-message-passing
         self.post_mp = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim), nn.Dropout(self.dropout), 
+            nn.Linear(hidden_dim * mult, hidden_dim), nn.Dropout(self.dropout), 
             nn.Linear(hidden_dim, out_dim))
     
     def build_model(self, in_dim, out_dim):
@@ -38,7 +40,7 @@ class GNN(nn.Module):
         elif self.model_type == 'GCNConv':
             return pyg_nn.GCNConv(in_dim, out_dim)
         elif self.model_type == 'GATConv':
-            return pyg_nn.GATConv(in_dim, out_dim, heads=3)
+            return pyg_nn.GATConv(in_dim, out_dim, heads=self.num_heads)
         else:
             raise Exception('Unsupported model type')
 
