@@ -15,40 +15,6 @@ from torch.utils.tensorboard import SummaryWriter
 import copy
 from sklearn.metrics import f1_score
 
-def feat_train(num_folds=5):
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    #model = GNN(1, 32, 2, 'SAGEConv')
-    model = NN(11,32,2)
-
-    model = model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
-    criterion = F.nll_loss
-    val_f1 = []
-    losses = []
-    model_save = copy.deepcopy(model.cpu())
-
-    for epoch in range(epochs):
-        model.train()
-        for batch in loader:
-            batch = batch.to(device)
-            optimizer.zero_grad()
-            out = model(batch)
-            weight = utils.get_weight(batch.y, device=device)
-            loss = criterion(out[batch.train_mask],
-                             batch.y[batch.train_mask],weight=weight)
-            loss.backward()
-            optimizer.step()
-            losses.append(loss.item())
-            print('loss on epoch', epoch, 'is', loss.item())
-
-            if epoch % 1 == 0:
-                val_f1.append(utils.get_acc(model, loader, is_val=True)['f1'])
-                print('Validation:', val_f1[-1])
-                if (val_f1[-1] == np.max(val_f1)):
-                    model_save = copy.deepcopy(model.cpu())
-                    best_f1 = val_f1[-1]
-    return val_f1, model_save, best_f1, losses
-
 def train(loader, epochs=100):
     writer = SummaryWriter('tensorboard_runs/gcn')
     writer.add_scalar('he', 123)
