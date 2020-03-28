@@ -16,14 +16,11 @@ import copy
 from sklearn.metrics import f1_score
 
 
-def train(loader, epochs=100):
+def train(loader, args, epochs=100):
     writer = SummaryWriter('tensorboard_runs/gcn')
-    writer.add_scalar('he', 123)
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    # TODO add options for selectinng GCNconv vs SAGEconv etc.
-    # TODO add options for setting input and output size of GNN
-    model = GNN(11, 32, 2, 'SAGEConv')
+    model = GNN(args.in_dim, args.hidden_dim, args.out_dim, args.network_type)
     model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
     criterion = F.nll_loss
@@ -37,7 +34,7 @@ def train(loader, epochs=100):
             batch = batch.to(device)
             optimizer.zero_grad()
             out = model(batch)
-            writer.add_graph(model, batch)
+            # writer.add_graph(model, batch)
             weight = utils.get_weight(batch.y, device=device)
             loss = criterion(out[batch.train_mask],
                              batch.y[batch.train_mask],weight=weight)
@@ -57,22 +54,13 @@ def train(loader, epochs=100):
     return val_f1, model_save, best_f1, losses
 
 
-def trainer(num_folds=5):
-    # X_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/ForAnalysis/X/TCGA_GTEX_GeneExpression.csv?raw=true'
-    # y_file = 'https://github.com/yhr91/CS224W_project/raw/master/Data/ForAnalysis/Y/NCG_cancergenes_list.txt'
-    #edgelist_file = 'https://github.com/yhr91/CS224W_project/blob/master/Data/PP-Decagon_ppi.csv?raw=true'
-    # y_file = '../dataset_collection/DG-AssocMiner_miner-disease-gene.tsv'
-    # TODO create dictionary of data paths for options
-    # Decagon alone
-    # edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
-
-    # GNBR alone
-    edgelist_file = './dataset_collection/GNBR-edgelist.csv'
-
-    # Decagon+GNBR
-    #edgelist_file = '../dataset_collection/Decagon_GNBR.csv'
-
-    # edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
+def trainer(args, num_folds=5):
+    edgelist_file = {
+        'Decagon': '../dataset_collection/PP-Decagon_ppi.csv',
+        'GNBR': '../dataset_collection/GNBR-edgelist.csv',
+        'Decagon_GNBR': '../dataset_collection/Decagon_GNBR.csv'
+    }[args.dataset]
+    
     processed_data = ProcessData(edgelist_file)
     X = processed_data.X
     X = torch.tensor(X.values, dtype=torch.float)
@@ -112,7 +100,7 @@ def trainer(num_folds=5):
         model_f1s = [] # save model recalls
 
         for loader in data_generator:
-            val_f1, model, best_f1, _ = train(loader)
+            val_f1, model, best_f1, _ = train(loader, args)
             val.append(val_f1)
             models.append(model)
             model_f1s.append(best_f1)
@@ -129,5 +117,13 @@ def trainer(num_folds=5):
     curr_file.close()
 
 if __name__ == '__main__':
-    # TODO functionality to read in arguments from command line.
-    trainer()
+    import argparse
+    parser = argparse.ArgumentParser(description='Define network type and dataset.')
+    parser.add_argument('network_type', type=str, choices=['GCNConv', 'SAGEConv', 'GATConv'])
+    parser.add_argument('dataset', type=str, choices=['Decagon', 'GNBR', 'Decagon_GNBR'])
+    parser.add_argument('--in_dim', type=int, default=11)
+    parser.add_argument('--hidden_dim', type=int, default=32)
+    parser.add_argument('--out_dim', type=int, default=2)
+    parser.add_argument('--num_heads', type=int, default=3)
+    args = parser.parse_args()
+    trainer(args)

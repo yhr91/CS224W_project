@@ -31,7 +31,7 @@ class ProcessData:
 
 
     def load_diseases(self):
-        with open("DG-AssocMiner_miner-disease-gene.tsv", 'r') as f:
+        with open("../Data/Y/DG-AssocMiner_miner-disease-gene.tsv", 'r') as f:
             for line in f.readlines()[1:]:
                 line = line.strip().split('\t')
                 if len(line) < 3:
