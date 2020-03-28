@@ -62,9 +62,10 @@ class GNN(nn.Module):
         return F.log_softmax(x, dim=1)
 
 
+'''This NN isn't used anywhere'''
 class NN(nn.Module):
     def __init__(self, in_dim=1, hidden_dim=1, out_dim=1):
-        super(Perceptron, self).__init__()
+        super(NN, self).__init__()
         self.num_layers = 2
         self.dropout = .2
 
