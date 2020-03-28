@@ -9,12 +9,12 @@ from datetime import datetime
 import numpy as np
 #from load_assoc_ben import ProcessData
 from load_assoc_ben_with_features import ProcessData
-from neural_net import GNN
+from neural_net import GNN, NN
 import utils
 import copy
 from sklearn.metrics import f1_score
 
-def feat_train():
+def feat_train(num_folds=5):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     #model = GNN(1, 32, 2, 'SAGEConv')
     model = NN(11,32,2)
@@ -132,7 +132,7 @@ def trainer(num_folds=5):
         model_f1s = [] # save model recalls
 
         for loader in data_generator:
-            val_f1, model, best_f1, _ = train(loader)
+            val_f1, model, best_f1, _ = feat_train(loader)
             val.append(val_f1)
             models.append(model)
             model_f1s.append(best_f1)
