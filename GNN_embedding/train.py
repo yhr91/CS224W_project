@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from datetime import datetime
 import numpy as np
 #from load_assoc_ben import ProcessData
-from load_assoc_ben_with_features import ProcessData
+from load_assoc import ProcessData
 from neural_net import GNN, NN
 import utils
 from torch.utils.tensorboard import SummaryWriter
@@ -129,9 +129,5 @@ def trainer(num_folds=5):
     curr_file.close()
 
 if __name__ == '__main__':
-<<<<<<< HEAD
     # TODO functionality to read in arguments from command line.
     trainer()
-=======
-    trainer()
->>>>>>> 072cb75e824d45e26cc24886fa020542bee51e37
