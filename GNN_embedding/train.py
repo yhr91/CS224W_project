@@ -9,7 +9,7 @@ from datetime import datetime
 import numpy as np
 #from load_assoc_ben import ProcessData
 from load_assoc import ProcessData
-from neural_net import GNN, NN
+from neural_net import GNN
 import utils
 from torch.utils.tensorboard import SummaryWriter
 import copy
