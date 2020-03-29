@@ -39,7 +39,7 @@ def load_pyg(X, edges, y, folds=5, test_size=0.1):
         data.val_mask = torch.tensor(val_mask, dtype=torch.bool)
         data.test_mask = torch.tensor(test_mask, dtype=torch.bool)
 
-        loader = DataLoader([data], batch_size=32, shuffle=True)
+        loader = DataLoader([data], batch_size=32) # shuffling done at train time
         yield loader
 
 

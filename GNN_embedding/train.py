@@ -12,7 +12,8 @@ from neural_net import GNN
 import utils
 from torch.utils.tensorboard import SummaryWriter
 import copy
-
+import random
+import os
 
 def train(loader, args, epochs=100):
     writer = SummaryWriter('tensorboard_runs/gcn/'+args.network_type+'_'+args.dataset)
@@ -26,9 +27,11 @@ def train(loader, args, epochs=100):
     model_save = copy.deepcopy(model.cpu())
 
     for epoch in range(epochs):
+        batches = list(loader)
+        random.shuffle(batches)
         model.train()
 
-        for batch in loader:
+        for batch in batches:
             batch = batch.to(device)
             optimizer.zero_grad()
             out = model(batch)
@@ -104,7 +107,7 @@ def trainer(args, num_folds=5):
             model_f1s.append(best_f1)
 
         best_model = models[np.argmax(model_f1s)]
-        print('Best model accuracy:')
+        print('Best model f1:')
         test_recall = utils.get_acc(best_model, loader, is_val=False)
         print(test_recall)
         curr_results[ind] = [test_recall]
@@ -124,4 +127,16 @@ if __name__ == '__main__':
     parser.add_argument('--out_dim', type=int, default=2)
     parser.add_argument('--num_heads', type=int, default=3)
     args = parser.parse_args()
+
+
+    def seed_torch(seed=1029):
+        random.seed(seed)
+        os.environ['PYTHONHASHSEED'] = str(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = True
+
+    seed_torch()
     trainer(args)
