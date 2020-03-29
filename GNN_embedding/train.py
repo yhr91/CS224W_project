@@ -1,8 +1,7 @@
 """
-@author: Ben, Yusuf, Kendrick
-
-Trains models to predict disease gene associations.
-"""
+    @author: Ben, Yusuf, Kendrick
+    Trains models to predict disease gene associations.
+    """
 import torch
 import torch.nn.functional as F
 from datetime import datetime
@@ -14,61 +13,48 @@ from torch.utils.tensorboard import SummaryWriter
 import copy
 import random
 
-<<<<<<< HEAD
 def train(loader, args, ind, it, epochs=100):
     writer = SummaryWriter('./tensorboard_runs/gcn/'+args.expt_name+'/'
                            +args.network_type+'_'+args.dataset)
-=======
-def train(loader, args, epochs=100):
-    writer = SummaryWriter('tensorboard_runs/gcn/'+args.network_type+'_'+args.dataset)
->>>>>>> a054a8bd7033577a2d8bacfa9696085c6247c43c
+        
+                           device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+                           model = GNN(args.in_dim, args.hidden_dim, args.out_dim, args.network_type)
+                           model = model.to(device)
+                           optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
+                           criterion = F.nll_loss
+                           best_f1 = 0
+                           model_save = copy.deepcopy(model.cpu())
+                           
+                           for epoch in range(epochs):
+                               model.train()
+                               
+                               for batch in loader:
+                                   batch = batch.to(device)
+                                   optimizer.zero_grad()
+                                   out = model(batch)
+                                   weight = utils.get_weight(batch.y, device=device)
+                                   loss = criterion(out[batch.train_mask],
+                                                    batch.y[batch.train_mask],weight=weight)
+                                                    loss.backward()
+                                                        optimizer.step()
+                                                        writer.add_scalar('TrainLoss/disease_'+str(ind), loss.item(), it*epochs+epoch)
+                                                        print('loss on epoch', epoch, 'is', loss.item())
+                                                        
+                                                        if epoch % 1 == 0:
+                                                            val_f1 = utils.get_acc(model, loader, is_val=True)['f1']
+                                                            writer.add_scalar('ValF1/disease_'+str(ind), val_f1, it*epochs+epoch)
+                                                            
+                                                            val_recall = utils.get_acc(model, loader, is_val=True)['recall']
+                                                            writer.add_scalar('ValRecall/disease_' + str(ind), val_f1, it*epochs+epoch)
+                                                            print('Validation:', val_f1)
+                                                            
+                                                            if val_f1 > best_f1:
+                                                                model_save = copy.deepcopy(model.cpu())
+                                                                best_f1 = val_f1
 
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    model = GNN(args.in_dim, args.hidden_dim, args.out_dim, args.network_type)
-    model = model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
-    criterion = F.nll_loss
-    best_f1 = 0
-    model_save = copy.deepcopy(model.cpu())
-
-    for epoch in range(epochs):
-        model.train()
-
-        for batch in loader:
-            batch = batch.to(device)
-            optimizer.zero_grad()
-            out = model(batch)
-            weight = utils.get_weight(batch.y, device=device)
-            loss = criterion(out[batch.train_mask],
-                             batch.y[batch.train_mask],weight=weight)
-            loss.backward()
-            optimizer.step()
-<<<<<<< HEAD
-            writer.add_scalar('TrainLoss/disease_'+str(ind), loss.item(), it*epochs+epoch)
-=======
-            writer.add_scalar('Loss/train', loss.item(), epoch)
->>>>>>> a054a8bd7033577a2d8bacfa9696085c6247c43c
-            print('loss on epoch', epoch, 'is', loss.item())
-
-            if epoch % 1 == 0:
-                val_f1 = utils.get_acc(model, loader, is_val=True)['f1']
-<<<<<<< HEAD
-                writer.add_scalar('ValF1/disease_'+str(ind), val_f1, it*epochs+epoch)
-
-                val_recall = utils.get_acc(model, loader, is_val=True)['recall']
-                writer.add_scalar('ValRecall/disease_' + str(ind), val_f1, it*epochs+epoch)
-=======
-                writer.add_scalar('F1/validation', val_f1, epoch)
->>>>>>> a054a8bd7033577a2d8bacfa9696085c6247c43c
-                print('Validation:', val_f1)
-
-                if val_f1 > best_f1:
-                    model_save = copy.deepcopy(model.cpu())
-                    best_f1 = val_f1
-
-    writer.flush()
-    writer.close()
-    return model_save, best_f1
+writer.flush()
+writer.close()
+return model_save, best_f1
 
 
 def trainer(args, num_folds=5):
@@ -83,92 +69,56 @@ def trainer(args, num_folds=5):
     X = torch.tensor(X.values, dtype=torch.float)
     disease_test_scores = {}
 
-    # Iterate over diseases
-    dir_ = './tensorboard_runs/gcn/'+args.expt_name
-
+# Iterate over diseases
+dir_ = './tensorboard_runs/gcn/'+args.expt_name
+    
     for ind, column in enumerate(processed_data.Y):
-<<<<<<< HEAD
         if ind > 100: break # TODO: Remove this later on. For testing purposes only
-=======
-        if ind > 100: return # TODO: Remove this later on. For testing purposes only
         
-        # TODO what does the code below do???
-        if (ind > 0 and ind % 100 == 0): # write 100
-        # columns to each file,
-            # so if it
-            # fails then
-            # it's ok
-            # Todo change to using tensorboard for this
-            dt = str(datetime.now())[8:19].replace(' ', '-')
-            curr_file = open(f'bensmodels/{dt}-{ind}-thru-{ind+100}.txt', 'w')
-            curr_file.write(str(curr_results))
-            curr_file.close()
-            curr_results = {}
-
-        # print(column)
-        y = processed_data.Y[column].tolist()
->>>>>>> a054a8bd7033577a2d8bacfa9696085c6247c43c
-
         y = processed_data.Y[column].tolist()
         edges = processed_data.get_edges()
-
+        
         y = torch.tensor(y, dtype=torch.long)
         edges = torch.tensor(edges.values, dtype=torch.long)
-
+        
         # Set up train and test sets:
         test_size = .1
         data_generator = utils.load_pyg(X, edges, y,
-                                folds=num_folds, test_size=test_size)
+                                        folds=num_folds, test_size=test_size)
+            
+                                        # 5-fold cross validation
+                                        models = [] # save models for now
+                                        model_scores = [] # save model recalls
+                                        
+                                        for it,loader in enumerate(data_generator):
+                                            model, score = train(loader, args, ind, it)
+                                            models.append(model)
+                                            model_scores.append(score)
+                                        
+                                        best_model = models[np.argmax(model_scores)]
+                                            best_test_score = utils.get_acc(best_model, loader, is_val=False)
+                                            print('Best model f1:')
+print(best_test_score)
+disease_test_scores[ind] = [best_test_score]
 
-        # 5-fold cross validation
-        models = [] # save models for now
-        model_scores = [] # save model recalls
-
-<<<<<<< HEAD
-        for it,loader in enumerate(data_generator):
-            model, score = train(loader, args, ind, it)
-=======
-        for loader in data_generator:
-            model, best_f1 = train(loader, args)
->>>>>>> a054a8bd7033577a2d8bacfa9696085c6247c43c
-            models.append(model)
-            model_scores.append(score)
-
-<<<<<<< HEAD
-        best_model = models[np.argmax(model_scores)]
-        best_test_score = utils.get_acc(best_model, loader, is_val=False)
-        print('Best model f1:')
-        print(best_test_score)
-        disease_test_scores[ind] = [best_test_score]
-=======
-        best_model = models[np.argmax(model_f1s)]
-        print('Best model f1:')
-        test_recall = utils.get_acc(best_model, loader, is_val=False)
-        print(test_recall)
-        curr_results[ind] = [test_recall]
->>>>>>> a054a8bd7033577a2d8bacfa9696085c6247c43c
-
-    # Save results
+# Save results
     np.save(dir_+'/results', disease_test_scores)
 
 if __name__ == '__main__':
     import argparse
     dt = str(datetime.now())[8:19].replace(' ', '_').replace(':', '-')
-
+    
     parser = argparse.ArgumentParser(description='Define network type and dataset.')
     parser.add_argument('--network-type', type=str, choices=['GCNConv', 'SAGEConv', 'GATConv'], default='GCNConv')
     parser.add_argument('--dataset', type=str, choices=['Decagon', 'GNBR', 'Decagon_GNBR'], default='GNBR')
-<<<<<<< HEAD
     parser.add_argument('--expt_name', type=str, default=dt)
-=======
->>>>>>> a054a8bd7033577a2d8bacfa9696085c6247c43c
     parser.add_argument('--use-features', type=bool, nargs='?', const=True, default=False)
     parser.add_argument('--in-dim', type=int, default=11)
     parser.add_argument('--hidden-dim', type=int, default=32)
     parser.add_argument('--out-dim', type=int, default=2)
     parser.add_argument('--num-heads', type=int, default=3)
     args = parser.parse_args()
-
+    
     if not args.use_features and args.in_dim > 1:
         print('Cannot have in dim of', args.in_dim, 'changing to 1.')
         args.in_dim = 1
@@ -181,5 +131,5 @@ if __name__ == '__main__':
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.deterministic = True
 
-    seed_torch()
-    trainer(args)
+seed_torch()
+trainer(args)
