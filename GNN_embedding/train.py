@@ -13,9 +13,14 @@ from torch.utils.tensorboard import SummaryWriter
 import copy
 import random
 
-def train(loader, args, ind, it, epochs=100):
+def train(loader, args, ind, it, epochs=500):
+    if args.use_features:
+        feat_str = 'feats'
+    else:
+        feat_str = 'no_feats'
+
     writer = SummaryWriter('./tensorboard_runs/gcn/'+args.expt_name+'/'
-                           +args.network_type+'_'+args.dataset)
+                           +args.network_type+'_'+args.dataset+'_'+feat_str)
         
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model = GNN(args.in_dim, args.hidden_dim, args.out_dim, args.network_type)
@@ -59,7 +64,7 @@ def train(loader, args, ind, it, epochs=100):
 
 def trainer(args, num_folds=5):
     edgelist_file = {
-        'Decagon': '../Data/PP-Decagon_ppi.csv',
+        'Decagon': '../dataset_collection/PP-Decagon_ppi.csv',
         'GNBR': '../dataset_collection/GNBR-edgelist.csv',
         'Decagon_GNBR': '../dataset_collection/Decagon_GNBR.csv'
     }[args.dataset]
