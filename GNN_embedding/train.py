@@ -19,7 +19,7 @@ def train(loader, args, ind, it, epochs=500):
     else:
         feat_str = 'no_feats'
 
-    writer = SummaryWriter('./tensorboard_runs/gcn/'+args.expt_name+'/'
+    writer = SummaryWriter('./tensorboard_runs/'+args.expt_name+'/'
                            +args.network_type+'_'+args.dataset+'_'+feat_str)
         
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -75,7 +75,7 @@ def trainer(args, num_folds=5):
     disease_test_scores = {}
 
     # Iterate over diseases
-    dir_ = './tensorboard_runs/gcn/'+args.expt_name
+    dir_ = './tensorboard_runs/'+args.expt_name
     
     for ind, column in enumerate(processed_data.Y):
         if ind > 100: break # TODO: Remove this later on. For testing purposes only
