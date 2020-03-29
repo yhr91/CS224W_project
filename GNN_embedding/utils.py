@@ -66,6 +66,7 @@ def get_acc(model, loader, is_val=False, k=100):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     probs = []
     model.eval()
+    model = model.to(device)
     preds, trues = [], []
     for data in loader:
         data = data.to(device)
@@ -78,7 +79,7 @@ def get_acc(model, loader, is_val=False, k=100):
             # Prints predicted class distribution
             #print(np.unique(pred.cpu(), return_counts=True)[1])
 
-    if (is_val):
+    if is_val:
         probs.extend(prob[data.val_mask.cpu()])
         preds.extend(pred[data.val_mask.cpu()].cpu().numpy())
         trues.extend(label[data.val_mask.cpu()].cpu().numpy())

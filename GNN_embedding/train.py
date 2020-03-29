@@ -13,7 +13,6 @@ import utils
 from torch.utils.tensorboard import SummaryWriter
 import copy
 import random
-import os
 
 def train(loader, args, epochs=100):
     writer = SummaryWriter('tensorboard_runs/gcn/'+args.network_type+'_'+args.dataset)
@@ -27,11 +26,9 @@ def train(loader, args, epochs=100):
     model_save = copy.deepcopy(model.cpu())
 
     for epoch in range(epochs):
-        batches = list(loader)
-        random.shuffle(batches)
         model.train()
 
-        for batch in batches:
+        for batch in loader:
             batch = batch.to(device)
             optimizer.zero_grad()
             out = model(batch)
@@ -59,24 +56,26 @@ def train(loader, args, epochs=100):
 
 def trainer(args, num_folds=5):
     edgelist_file = {
-        'Decagon': '../dataset_collection/PP-Decagon_ppi.csv',
+        'Decagon': '../Data/PP-Decagon_ppi.csv',
         'GNBR': '../dataset_collection/GNBR-edgelist.csv',
         'Decagon_GNBR': '../dataset_collection/Decagon_GNBR.csv'
     }[args.dataset]
     
-    processed_data = ProcessData(edgelist_file)
+    processed_data = ProcessData(edgelist_file, use_features=args.use_features)
     X = processed_data.X
     X = torch.tensor(X.values, dtype=torch.float)
     # TODO switch to using tensorboard for tracing results
     curr_results = {}
 
     for ind, column in enumerate(processed_data.Y):
+        if ind > 100: return # TODO: Remove this later on. For testing purposes only
+        
         # TODO what does the code below do???
         if (ind > 0 and ind % 100 == 0): # write 100
         # columns to each file,
             # so if it
             # fails then
-        # it's ok
+            # it's ok
             # Todo change to using tensorboard for this
             dt = str(datetime.now())[8:19].replace(' ', '-')
             curr_file = open(f'bensmodels/{dt}-{ind}-thru-{ind+100}.txt', 'w')
@@ -120,18 +119,21 @@ def trainer(args, num_folds=5):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='Define network type and dataset.')
-    parser.add_argument('--network_type', type=str, choices=['GCNConv', 'SAGEConv', 'GATConv'], default='GCNConv')
+    parser.add_argument('--network-type', type=str, choices=['GCNConv', 'SAGEConv', 'GATConv'], default='GCNConv')
     parser.add_argument('--dataset', type=str, choices=['Decagon', 'GNBR', 'Decagon_GNBR'], default='GNBR')
-    parser.add_argument('--in_dim', type=int, default=11)
-    parser.add_argument('--hidden_dim', type=int, default=32)
-    parser.add_argument('--out_dim', type=int, default=2)
-    parser.add_argument('--num_heads', type=int, default=3)
+    parser.add_argument('--use-features', type=bool, nargs='?', const=True, default=False)
+    parser.add_argument('--in-dim', type=int, default=11)
+    parser.add_argument('--hidden-dim', type=int, default=32)
+    parser.add_argument('--out-dim', type=int, default=2)
+    parser.add_argument('--num-heads', type=int, default=3)
     args = parser.parse_args()
 
+    if not args.use_features and args.in_dim > 1:
+        print('Cannot have in dim of', args.in_dim, 'changing to 1.')
+        args.in_dim = 1
 
     def seed_torch(seed=1029):
         random.seed(seed)
-        os.environ['PYTHONHASHSEED'] = str(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
         torch.cuda.manual_seed(seed)
