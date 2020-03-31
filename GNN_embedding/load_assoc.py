@@ -43,6 +43,7 @@ class ProcessData:
                 self.gene_to_disease_dict[gene].add(disease)
                 self.disease_to_genes_dict[disease].add(gene)
                 self.disease.add(disease)
+        self.disease = sorted(list(self.disease))
 
     def create_disease_df(self):
         start = np.empty((len(self.gene_to_disease_dict), len(self.disease)))
