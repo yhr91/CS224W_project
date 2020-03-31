@@ -78,7 +78,7 @@ def trainer(args, num_folds=5):
     dir_ = './tensorboard_runs/'+args.expt_name
     
     for ind, column in enumerate(processed_data.Y):
-        if ind > 2: break # TODO: Remove this later on. For testing purposes only
+        if ind > 5: break # TODO: Remove this later on. For testing purposes only
         
         y = processed_data.Y[column].tolist()
         edges = processed_data.get_edges()
