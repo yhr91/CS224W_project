@@ -14,6 +14,8 @@ import torch.nn.functional as F
 import torch_geometric.nn as pyg_nn
 import torch_geometric.utils as pyg_utils
 
+import conv_layers
+
 class GNN(nn.Module):
     def __init__(self, in_dim=1, hidden_dim=1, out_dim=1, model_type='GCNConv'):
         super(GNN, self).__init__()
@@ -36,7 +38,8 @@ class GNN(nn.Module):
     
     def build_model(self, in_dim, out_dim):
         if self.model_type == 'SAGEConv':
-            return pyg_nn.SAGEConv(in_dim, out_dim)
+            return conv_layers.SAGEConv(in_dim, out_dim)
+            # return pyg_nn.SAGEConv(in_dim, out_dim, concat=True)
         elif self.model_type == 'GCNConv':
             return pyg_nn.GCNConv(in_dim, out_dim)
         elif self.model_type == 'GATConv':

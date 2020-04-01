@@ -38,8 +38,7 @@ def train(loader, args, ind, it, epochs=500):
             optimizer.zero_grad()
             out = model(batch)
             weight = utils.get_weight(batch.y, device=device)
-            loss = criterion(out[batch.train_mask],
-            batch.y[batch.train_mask],weight=weight)
+            loss = criterion(out[batch.train_mask], batch.y[batch.train_mask],weight=weight)
             loss.backward()
             optimizer.step()
             writer.add_scalar('TrainLoss/disease_'+str(ind), loss.item(), it*epochs+epoch)
@@ -137,4 +136,5 @@ if __name__ == '__main__':
         torch.backends.cudnn.deterministic = True
 
     seed_torch()
+    print('Experiment name is', args.expt_name)
     trainer(args)
