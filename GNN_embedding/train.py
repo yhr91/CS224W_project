@@ -76,8 +76,11 @@ def trainer(args, num_folds=5):
     # Iterate over diseases
     dir_ = './tensorboard_runs/'+args.expt_name
     
+    sel_diseases = [13, 15, 25, 26,31, 37, 41, 51, 53, 58, 62, 65, 66, 71, 72]
+    processed_data.Y = processed_data.Y.iloc[:,sel_diseases]
+
     for ind, column in enumerate(processed_data.Y):
-        if ind > 5: break # TODO: Remove this later on. For testing purposes only
+        #if ind > 5: break # TODO: Remove this later on. For testing purposes only
         
         y = processed_data.Y[column].tolist()
         edges = processed_data.get_edges()
