@@ -1,2 +1,2 @@
 #!/bin/bash
-python3 train.py --network-type SAGEConv --dataset Decagon_GNBR
+python3 train.py --network-type SAGEConvMean --dataset Decagon_GNBR

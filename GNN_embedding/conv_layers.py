@@ -52,13 +52,13 @@ class SAGEConv(pyg_nn.MessagePassing):
             msg = self.nonlin(self.lin(msg))
         return msg
     
-    def aggregate(self, inputs, index):
+    def aggregate(self, inputs, index, dim_size=None):
         '''
         Inputs is of shape [N, in_channels], index is of shape [N], where the elements of index
         denote which index of the output vector the corresponding element of inputs shall be aggregated in
         '''
         if self.aggr in ['sum', 'mean', 'min', 'max']:
-            return scatter(inputs, index, dim=0, reduce=self.aggr)
+            return scatter(inputs, index, dim=0, dim_size=dim_size, reduce=self.aggr)
         raise NotImplementedError('No such aggr for ' + self.aggr + '.')
 
     def update(self, aggr_out, x):

@@ -37,9 +37,12 @@ class GNN(nn.Module):
             nn.Linear(hidden_dim, out_dim))
     
     def build_model(self, in_dim, out_dim):
-        if self.model_type == 'SAGEConv':
-            return conv_layers.SAGEConv(in_dim, out_dim)
-            # return pyg_nn.SAGEConv(in_dim, out_dim, concat=True)
+        if self.model_type == 'SAGEConvMean':
+            return conv_layers.SAGEConv(in_dim, out_dim, aggr='mean')
+        elif self.model_type == 'SAGEConvMin':
+            return conv_layers.SAGEConv(in_dim, out_dim, aggr='min')
+        elif self.model_type == 'SAGEConvMax':
+            return conv_layers.SAGEConv(in_dim, out_dim, aggr='max')
         elif self.model_type == 'GCNConv':
             return pyg_nn.GCNConv(in_dim, out_dim)
         elif self.model_type == 'GATConv':
