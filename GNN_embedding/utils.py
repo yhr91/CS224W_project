@@ -27,6 +27,12 @@ def load_pyg(X, edges, y, folds=5, test_size=0.1):
 
     # Now use the remainder of the data to create train and val sets
     kf = StratifiedKFold(n_splits=folds, random_state=2)
+
+    # Consider all edges and their reverse
+    reverse_edges = np.flip(edges.numpy(),1)
+    edges = np.concatenate([edges,reverse_edges])
+    edges = torch.tensor(edges.values, dtype=torch.long)
+
     for train_idx, val_idx in kf.split(X, y):
         data = Data(x=X, edge_index=edges.t().contiguous(), y=y)
 

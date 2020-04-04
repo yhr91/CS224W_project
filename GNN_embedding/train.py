@@ -78,7 +78,7 @@ def trainer(args, num_folds=5):
     dir_ = './tensorboard_runs/'+args.expt_name
 
     # This returns all disease indices corresponding to given disease classes
-    sel_diseases = processed_data.get_disease_class_idx(['cancer','monogenic disease'])
+    sel_diseases = processed_data.get_disease_class_idx(['cancer'])
     processed_data.Y = processed_data.Y.iloc[:,sel_diseases]
 
     for ind, column in enumerate(processed_data.Y):
