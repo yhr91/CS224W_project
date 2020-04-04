@@ -12,8 +12,9 @@ import utils
 from torch.utils.tensorboard import SummaryWriter
 import copy
 import random
+import pandas as pd
 
-def train(loader, args, ind, it, epochs=500):
+def train(loader, args, ind, it, epochs=250):
     if args.use_features:
         feat_str = 'feats'
     else:
@@ -75,9 +76,13 @@ def trainer(args, num_folds=5):
 
     # Iterate over diseases
     dir_ = './tensorboard_runs/'+args.expt_name
-    
+
+    # This returns all disease indices corresponding to given disease classes
+    sel_diseases = processed_data.get_disease_class_idx(['cancer','monogenic disease'])
+    processed_data.Y = processed_data.Y.iloc[:,sel_diseases]
+
     for ind, column in enumerate(processed_data.Y):
-        if ind > 5: break # TODO: Remove this later on. For testing purposes only
+        #if ind > 5: break # TODO: Remove this later on. For testing purposes only
         
         y = processed_data.Y[column].tolist()
         edges = processed_data.get_edges()
