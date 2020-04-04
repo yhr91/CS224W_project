@@ -154,4 +154,13 @@ class ProcessData:
         # print(combined)
         return combined
 
+    # Returns the indices of all diseases that fall within specific classes
+    def get_disease_class_idx(self, disease_list):
+        disease_classes = pd.read_csv('../Data/bio-pathways-diseaseclasses.csv')
+        sel_disease_classes = []
+        for d in disease_list:
+            sel_disease_classes.extend(
+                disease_classes[disease_classes['Disease Class'] == d]['Disease Name'].values)
+        return [it for it, i in enumerate(self.Y.columns.values) if i in sel_disease_classes]
+
 # ProcessData()

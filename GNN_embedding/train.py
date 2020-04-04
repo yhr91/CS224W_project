@@ -12,6 +12,7 @@ import utils
 from torch.utils.tensorboard import SummaryWriter
 import copy
 import random
+import pandas as pd
 
 def train(loader, args, ind, it, epochs=500):
     if args.use_features:
@@ -75,8 +76,9 @@ def trainer(args, num_folds=5):
 
     # Iterate over diseases
     dir_ = './tensorboard_runs/'+args.expt_name
-    
-    sel_diseases = [13, 15, 25, 26,31, 37, 41, 51, 53, 58, 62, 65, 66, 71, 72]
+
+    # This returns all disease indices corresponding to given disease classes
+    sel_diseases = processed_data.get_disease_class_idx(['cancer','monogenic disease'])
     processed_data.Y = processed_data.Y.iloc[:,sel_diseases]
 
     for ind, column in enumerate(processed_data.Y):
