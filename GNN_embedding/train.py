@@ -113,7 +113,7 @@ if __name__ == '__main__':
     dt = str(datetime.now())[8:19].replace(' ', '_').replace(':', '-')
     
     parser = argparse.ArgumentParser(description='Define network type and dataset.')
-    parser.add_argument('--network-type', type=str, choices=['GCNConv', 'SAGEConv', 'GATConv'], default='GCNConv')
+    parser.add_argument('--network-type', type=str, choices=['GCNConv', 'SAGEConvMean', 'SAGEConvMin', 'SAGEConvMax', 'GATConv'], default='GCNConv')
     parser.add_argument('--dataset', type=str, choices=['Decagon', 'GNBR', 'Decagon_GNBR'], default='GNBR')
     parser.add_argument('--expt_name', type=str, default=dt)
     parser.add_argument('--use-features', type=bool, nargs='?', const=True, default=False)
