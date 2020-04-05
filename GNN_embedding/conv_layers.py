@@ -106,7 +106,7 @@ class HGCNConv(nn.Module):
     
     def convert_to_adj(self, edge_index, num_nodes):
         '''we want [2, E] -> [N, N]'''
-        adj_mat = torch.zeros(num_nodes, num_nodes)
+        adj_mat = torch.sparse.FloatTensor(num_nodes, num_nodes)
         for edge in range(edge_index.shape[1]):
             assert adj_mat[edge_index[0, edge], edge_index[1, edge]] == 0 # no repeated edges
             adj_mat[edge_index[0, edge], edge_index[1, edge]] = 1
