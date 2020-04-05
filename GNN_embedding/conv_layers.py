@@ -6,6 +6,8 @@ import torch_geometric.nn as pyg_nn
 import torch_geometric.utils as pyg_utils
 
 from torch_scatter import scatter
+import layers, manifolds, models, optimizers, h_utils
+from models import encoders, decoders
 
 class SAGEConv(pyg_nn.MessagePassing):
     def __init__(self, in_channels, out_channels, normalize=True, aggr='mean',
@@ -72,3 +74,63 @@ class SAGEConv(pyg_nn.MessagePassing):
         if self.normalize:
             aggr_out = F.normalize(aggr_out)
         return aggr_out
+
+class HGCNConv(nn.Module):
+    def __init__(self, args):
+        super(HGCNConv, self).__init__()
+
+        args.act='relu'
+        args.dim = args.hidden_dim
+        args.manifold='Hyperboloid'
+        args.model='HGCN'
+        args.num_layers=2
+        args.n_nodes=19678 # for GNBR
+        args.n_classes= args.out_dim
+        args.c=None
+        args.feat_dim = args.in_dim
+        args.cuda=0
+        args.device='cpu'
+        args.task='nc'
+        args.dropout=0.2
+        args.bias=1
+        
+        self.manifold_name = args.manifold
+        self.manifold = getattr(manifolds, args.manifold)()
+        self.c = nn.Parameter(torch.Tensor([1.])) # curvature
+        if self.manifold.name == 'Hyperboloid':
+            args.feat_dim = args.feat_dim + 1
+        self.nnodes = args.n_nodes
+        self.encoder = getattr(encoders, args.model)(self.c, args)
+        self.decoder = decoders.model2decoder[args.model](self.c, args)
+        self.adj_mat = None
+    
+    def convert_to_adj(self, edge_index, num_nodes):
+        '''we want [2, E] -> [N, N]'''
+        adj_mat = torch.zeros(num_nodes, num_nodes)
+        for edge in range(edge_index.shape[1]):
+            assert adj_mat[edge_index[0, edge], edge_index[1, edge]] == 0 # no repeated edges
+            adj_mat[edge_index[0, edge], edge_index[1, edge]] = 1
+            assert adj_mat[edge_index[1, edge], edge_index[0, edge]] == 0 # no repeated edges
+        self.adj_mat = adj_mat
+        assert torch.all((adj_mat + adj_mat.t()) < 2)
+        assert torch.all(adj_mat.eq(adj_mat.t())) # symmetric because undirected
+    
+    def forward(self, data):
+        '''
+        data.x shape: [N, feats]
+        data.edge_index shape: [2, E]
+        '''
+        x = data.x
+        if data.num_node_features == 0:
+            x = torch.ones(data.num_nodes, 1)
+
+        if self.adj_mat is None:
+            self.convert_to_adj(data.edge_index, len(x)) # must transform this
+        
+        if self.manifold.name == 'Hyperboloid':
+            o = torch.zeros_like(x) # north pole!
+            x = torch.cat([o[:, 0:1], x], dim=1)
+
+        h = self.encoder.encode(x, self.adj_mat)
+        output = self.decoder.decode(h, self.adj_mat)
+        return F.log_softmax(output, dim=1)

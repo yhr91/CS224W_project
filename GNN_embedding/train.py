@@ -13,6 +13,8 @@ from torch.utils.tensorboard import SummaryWriter
 import copy
 import random
 import pandas as pd
+import conv_layers
+import optimizers
 
 def train(loader, args, ind, it, epochs=250):
     if args.use_features:
@@ -24,9 +26,15 @@ def train(loader, args, ind, it, epochs=250):
                            +args.network_type+'_'+args.dataset+'_'+feat_str)
         
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    model = GNN(args.in_dim, args.hidden_dim, args.out_dim, args.network_type)
+    if args.network_type == 'HGCNConv':
+        model = conv_layers.HGCNConv(args)
+    else:
+        model = GNN(args.in_dim, args.hidden_dim, args.out_dim, args.network_type)
     model = model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
+    if args.network_type == 'HGCNConv':
+        optimizer = optimizers.RiemannianAdam(model.parameters(), lr=0.01, weight_decay=5e-4)
+    else:
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
     criterion = F.nll_loss
     best_f1 = 0
     model_save = copy.deepcopy(model.cpu())
@@ -118,7 +126,7 @@ if __name__ == '__main__':
     dt = str(datetime.now())[8:19].replace(' ', '_').replace(':', '-')
     
     parser = argparse.ArgumentParser(description='Define network type and dataset.')
-    parser.add_argument('--network-type', type=str, choices=['GCNConv', 'SAGEConvMean', 'SAGEConvMin', 'SAGEConvMax', 'GATConv'], default='GCNConv')
+    parser.add_argument('--network-type', type=str, choices=['GCNConv', 'SAGEConvMean', 'SAGEConvMin', 'SAGEConvMax', 'HGCNConv', 'GATConv'], default='GCNConv')
     parser.add_argument('--dataset', type=str, choices=['Decagon', 'GNBR', 'Decagon_GNBR'], default='GNBR')
     parser.add_argument('--expt_name', type=str, default=dt)
     parser.add_argument('--use-features', type=bool, nargs='?', const=True, default=False)
