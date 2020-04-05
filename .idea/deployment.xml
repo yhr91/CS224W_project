@@ -9,6 +9,13 @@
           </mappings>
         </serverdata>
       </paths>
+      <paths name="Yusuf@34.91.194.193:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/Yusuf/CS224W_project" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
       <paths name="Yusuf@35.197.98.255:22">
         <serverdata>
           <mappings>
