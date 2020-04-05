@@ -110,9 +110,7 @@ class HGCNConv(nn.Module):
         for edge in range(edge_index.shape[1]):
             assert adj_mat[edge_index[0, edge], edge_index[1, edge]] == 0 # no repeated edges
             adj_mat[edge_index[0, edge], edge_index[1, edge]] = 1
-            assert adj_mat[edge_index[1, edge], edge_index[0, edge]] == 0 # no repeated edges
         self.adj_mat = adj_mat
-        assert torch.all((adj_mat + adj_mat.t()) < 2)
         assert torch.all(adj_mat.eq(adj_mat.t())) # symmetric because undirected
     
     def forward(self, data):
