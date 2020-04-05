@@ -16,7 +16,7 @@ import pandas as pd
 import conv_layers
 import optimizers
 
-def train(loader, args, ind, it, epochs=500):
+def train(loader, args, ind, it, epochs=250):
     if args.use_features:
         feat_str = 'feats'
     else:
