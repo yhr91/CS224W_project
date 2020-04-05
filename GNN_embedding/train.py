@@ -16,7 +16,7 @@ import pandas as pd
 import conv_layers
 import optimizers
 
-def train(loader, args, ind, it, epochs=250):
+def train(loader, args, ind, it, epochs=500):
     if args.use_features:
         feat_str = 'feats'
     else:
@@ -86,7 +86,7 @@ def trainer(args, num_folds=5):
     dir_ = './tensorboard_runs/'+args.expt_name
 
     # This returns all disease indices corresponding to given disease classes
-    sel_diseases = processed_data.get_disease_class_idx(['cancer','monogenic disease'])
+    sel_diseases = processed_data.get_disease_class_idx(['cancer'])
     processed_data.Y = processed_data.Y.iloc[:,sel_diseases]
 
     for ind, column in enumerate(processed_data.Y):
@@ -95,7 +95,7 @@ def trainer(args, num_folds=5):
         y = processed_data.Y[column].tolist()
         edges = processed_data.get_edges()
         
-        y = torch.tensor(y, dtype=torch.long)
+        y = torch.tensor(np.array(y).astype('int'), dtype=torch.long)
         edges = torch.tensor(edges.values, dtype=torch.long)
         
         # Set up train and test sets:
@@ -123,7 +123,7 @@ def trainer(args, num_folds=5):
 
 if __name__ == '__main__':
     import argparse
-    dt = str(datetime.now())[8:19].replace(' ', '_').replace(':', '-')
+    dt = str(datetime.now())[5:19].replace(' ', '_').replace(':', '-')
     
     parser = argparse.ArgumentParser(description='Define network type and dataset.')
     parser.add_argument('--network-type', type=str, choices=['GCNConv', 'SAGEConvMean', 'SAGEConvMin', 'SAGEConvMax', 'HGCNConv', 'GATConv'], default='GCNConv')
