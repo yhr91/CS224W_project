@@ -33,7 +33,7 @@ def get_dim_act_curv(args):
     else:
         # fixed curvature
         curvatures = [torch.tensor([args.c]) for _ in range(n_curvatures)]
-    if not args.cuda == -1:
+    if args.cuda != -1:
         curvatures = [curv.to(args.device) for curv in curvatures]
     return dims, acts, curvatures
 

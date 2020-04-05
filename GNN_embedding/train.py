@@ -38,7 +38,6 @@ def train(loader, args, ind, it, epochs=250):
     criterion = F.nll_loss
     best_f1 = 0
     model_save = copy.deepcopy(model.cpu())
-    # exit(0)
                            
     for epoch in range(epochs):
         model.train()

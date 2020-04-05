@@ -110,9 +110,10 @@ class HGCNConv(nn.Module):
         edge_index = edge_index.to(self.device)
         vals = torch.ones(edge_index.shape[1], device=self.device)
         adj_mat = torch.sparse.FloatTensor(edge_index, vals, (num_nodes, num_nodes)).to(self.device)
-        #for edge in range(edge_index.shape[1]):
-        #    # assert adj_mat[edge_index[0, edge], edge_index[1, edge]] == 0 # no repeated edges
-        #    adj_mat[edge_index[0, edge], edge_index[1, edge]] = 1
+        # adj_mat = torch.zeros(num_nodes, num_nodes)
+        # for edge in range(edge_index.shape[1]):
+            # assert adj_mat[edge_index[0, edge], edge_index[1, edge]] == 0 # no repeated edges
+            # adj_mat[edge_index[0, edge], edge_index[1, edge]] = 1
         self.adj_mat = adj_mat
         # assert torch.all(adj_mat.eq(adj_mat.t())) # symmetric because undirected
     

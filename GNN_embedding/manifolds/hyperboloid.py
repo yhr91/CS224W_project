@@ -92,12 +92,8 @@ class Hyperboloid(Manifold):
         sqrtK = K ** 0.5
         d = u.size(-1) - 1
         x = u.narrow(-1, 1, d).view(-1, d)
-        #print(x.device)
         x_norm = torch.norm(x, p=2, dim=1, keepdim=True)
-        #dev = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-        x_norm = torch.clamp(x_norm, min=self.min_norm)#.to(dev)
-        #print(x_norm.device)
-        #print(sqrtK.device)
+        x_norm = torch.clamp(x_norm, min=self.min_norm)
         theta = x_norm / sqrtK
         res = torch.ones_like(u)
         res[:, 0:1] = sqrtK * cosh(theta)
