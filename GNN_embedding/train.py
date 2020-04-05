@@ -61,6 +61,7 @@ def train(loader, args, ind, it, epochs=250):
                 val_recall = utils.get_acc(model, loader, is_val=True)['recall']
                 writer.add_scalar('ValRecall/disease_' + str(ind), val_f1, it*epochs+epoch)
                 print('Validation:', val_f1)
+                writer.flush()
             
             # Model selection 
             if val_f1 > best_f1:
