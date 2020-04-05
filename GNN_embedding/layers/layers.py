@@ -72,11 +72,13 @@ class Linear(Module):
         self.reset_parameters()
     
     def reset_parameters(self):
-        nn.init.kaiming_uniform_(self.weight, a=math.sqrt(5))
-        if self.bias is not None:
-            fan_in, _ = nn.init._calculate_fan_in_and_fan_out(self.weight)
-            bound = 1 / math.sqrt(fan_in)
-            nn.init.uniform_(self.bias, -bound, bound)
+        # nn.init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+        # if self.bias is not None:
+        #     fan_in, _ = nn.init._calculate_fan_in_and_fan_out(self.weight)
+        #     bound = 1 / math.sqrt(fan_in)
+        #     nn.init.uniform_(self.bias, -bound, bound)
+        nn.init.xavier_uniform_(self.weight, gain=math.sqrt(2))
+        nn.init.constant_(self.bias, 0)
 
     def forward(self, x):
         # hidden = self.linear.forward(x)

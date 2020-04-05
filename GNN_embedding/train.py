@@ -32,12 +32,13 @@ def train(loader, args, ind, it, epochs=250):
         model = GNN(args.in_dim, args.hidden_dim, args.out_dim, args.network_type)
     model = model.to(device)
     if args.network_type == 'HGCNConv':
-        optimizer = optimizers.RiemannianAdam(model.parameters(), lr=0.01, weight_decay=5e-4)
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)#optimizers.RiemannianAdam(model.parameters(), lr=0.01, weight_decay=5e-4)
     else:
         optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
     criterion = F.nll_loss
     best_f1 = 0
     model_save = copy.deepcopy(model.cpu())
+    # exit(0)
                            
     for epoch in range(epochs):
         model.train()
