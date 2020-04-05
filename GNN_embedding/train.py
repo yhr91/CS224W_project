@@ -87,7 +87,7 @@ def trainer(args, num_folds=5):
         y = processed_data.Y[column].tolist()
         edges = processed_data.get_edges()
         
-        y = torch.tensor(y, dtype=torch.long)
+        y = torch.tensor(np.array(y).astype('int'), dtype=torch.long)
         edges = torch.tensor(edges.values, dtype=torch.long)
         
         # Set up train and test sets:
