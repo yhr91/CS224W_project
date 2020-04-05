@@ -29,8 +29,8 @@ def load_pyg(X, edges, y, folds=5, test_size=0.1):
     kf = StratifiedKFold(n_splits=folds, random_state=2)
 
     # Consider all edges and their reverse
-    edges = [e for e in edges if e[0] != e[1]] # Remove self edges
-    reverse_edges = np.flip(edges.numpy(),1)
+    edges = [e for e in edges.numpy() if e[0] != e[1]] # Remove self edges
+    reverse_edges = np.flip(np.array(edges),1)
     edges = np.concatenate([edges,reverse_edges])
     edges = np.unique(edges,axis=0) # Remove repeats
     edges = torch.tensor(edges, dtype=torch.long)
