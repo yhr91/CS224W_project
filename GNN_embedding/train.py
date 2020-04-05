@@ -50,20 +50,22 @@ def train(loader, args, ind, it, epochs=250):
             loss = criterion(out[batch.train_mask], batch.y[batch.train_mask],weight=weight)
             loss.backward()
             optimizer.step()
-            writer.add_scalar('TrainLoss/disease_'+str(ind), loss.item(), it*epochs+epoch)
-            print('loss on epoch', epoch, 'is', loss.item())
+            val_f1 = utils.get_acc(model, loader, is_val=True)['f1'] 
 
-            if epoch % 1 == 0:
-                val_f1 = utils.get_acc(model, loader, is_val=True)['f1']
+            # Tensorboard writing
+            if epoch % 20 == 0:
+                print('loss on epoch', epoch, 'is', loss.item())
+                writer.add_scalar('TrainLoss/disease_'+str(ind), loss.item(), it*epochs+epoch)
                 writer.add_scalar('ValF1/disease_'+str(ind), val_f1, it*epochs+epoch)
 
                 val_recall = utils.get_acc(model, loader, is_val=True)['recall']
                 writer.add_scalar('ValRecall/disease_' + str(ind), val_f1, it*epochs+epoch)
                 print('Validation:', val_f1)
-
-                if val_f1 > best_f1:
-                    model_save = copy.deepcopy(model.cpu())
-                    best_f1 = val_f1
+            
+            # Model selection 
+            if val_f1 > best_f1:
+                model_save = copy.deepcopy(model.cpu())
+                best_f1 = val_f1
 
     writer.flush()
     writer.close()
