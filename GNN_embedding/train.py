@@ -115,7 +115,7 @@ def trainer(args, num_folds=5):
 
 if __name__ == '__main__':
     import argparse
-    dt = str(datetime.now())[8:19].replace(' ', '_').replace(':', '-')
+    dt = str(datetime.now())[5:19].replace(' ', '_').replace(':', '-')
     
     parser = argparse.ArgumentParser(description='Define network type and dataset.')
     parser.add_argument('--network-type', type=str, choices=['GCNConv', 'SAGEConv', 'GATConv'], default='GCNConv')
