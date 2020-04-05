@@ -89,11 +89,12 @@ class HGCNConv(nn.Module):
         args.c=None
         args.feat_dim = args.in_dim
         args.cuda=0
-        args.device='cpu'
+        args.device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         args.task='nc'
         args.dropout=0.2
         args.bias=1
         
+        self.device = args.device
         self.manifold_name = args.manifold
         self.manifold = getattr(manifolds, args.manifold)()
         self.c = nn.Parameter(torch.Tensor([1.])) # curvature
@@ -106,12 +107,14 @@ class HGCNConv(nn.Module):
     
     def convert_to_adj(self, edge_index, num_nodes):
         '''we want [2, E] -> [N, N]'''
-        adj_mat = torch.sparse.FloatTensor(num_nodes, num_nodes)
-        for edge in range(edge_index.shape[1]):
-            assert adj_mat[edge_index[0, edge], edge_index[1, edge]] == 0 # no repeated edges
-            adj_mat[edge_index[0, edge], edge_index[1, edge]] = 1
+        edge_index = edge_index.to(self.device)
+        vals = torch.ones(edge_index.shape[1], device=self.device)
+        adj_mat = torch.sparse.FloatTensor(edge_index, vals, (num_nodes, num_nodes)).to(self.device)
+        #for edge in range(edge_index.shape[1]):
+        #    # assert adj_mat[edge_index[0, edge], edge_index[1, edge]] == 0 # no repeated edges
+        #    adj_mat[edge_index[0, edge], edge_index[1, edge]] = 1
         self.adj_mat = adj_mat
-        assert torch.all(adj_mat.eq(adj_mat.t())) # symmetric because undirected
+        # assert torch.all(adj_mat.eq(adj_mat.t())) # symmetric because undirected
     
     def forward(self, data):
         '''
@@ -121,6 +124,7 @@ class HGCNConv(nn.Module):
         x = data.x
         if data.num_node_features == 0:
             x = torch.ones(data.num_nodes, 1)
+        x = x.to(self.device)
 
         if self.adj_mat is None:
             self.convert_to_adj(data.edge_index, len(x)) # must transform this

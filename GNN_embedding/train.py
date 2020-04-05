@@ -37,7 +37,7 @@ def train(loader, args, ind, it, epochs=250):
         optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
     criterion = F.nll_loss
     best_f1 = 0
-    model_save = copy.deepcopy(model.cpu())
+    #model_save = copy.deepcopy(model.cpu())
                            
     for epoch in range(epochs):
         model.train()
@@ -62,11 +62,12 @@ def train(loader, args, ind, it, epochs=250):
                 print('Validation:', val_f1)
 
                 if val_f1 > best_f1:
-                    model_save = copy.deepcopy(model.cpu())
+                    #model_save = copy.deepcopy(model.cpu())
                     best_f1 = val_f1
 
     writer.flush()
     writer.close()
+    model_save = None
     return model_save, best_f1
 
 

@@ -64,11 +64,24 @@ class Linear(Module):
     def __init__(self, in_features, out_features, dropout, act, use_bias):
         super(Linear, self).__init__()
         self.dropout = dropout
-        self.linear = nn.Linear(in_features, out_features, use_bias)
+        # self.linear = nn.Linear(in_features, out_features, use_bias)
+        self.weight = Parameter(torch.Tensor(in_features, out_features))
+        if use_bias:
+            self.bias = Parameter(torch.Tensor(out_features))
         self.act = act
+    
+    def reset_parameters(self):
+        nn.init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+        if self.bias is not None:
+            fan_in, _ = nn.init._calculate_fan_in_and_fan_out(self.weight)
+            bound = 1 / math.sqrt(fan_in)
+            nn.init.uniform_(self.bias, -bound, bound)
 
     def forward(self, x):
-        hidden = self.linear.forward(x)
+        # hidden = self.linear.forward(x)
+        hidden = torch.matmul(x, self.weight)
+        if self.bias is not None:
+            hidden = hidden + self.bias
         hidden = F.dropout(hidden, self.dropout, training=self.training)
         out = self.act(hidden)
         return out

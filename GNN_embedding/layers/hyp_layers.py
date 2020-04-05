@@ -33,8 +33,8 @@ def get_dim_act_curv(args):
     else:
         # fixed curvature
         curvatures = [torch.tensor([args.c]) for _ in range(n_curvatures)]
-        if not args.cuda == -1:
-            curvatures = [curv.to(args.device) for curv in curvatures]
+    if not args.cuda == -1:
+        curvatures = [curv.to(args.device) for curv in curvatures]
     return dims, acts, curvatures
 
 
@@ -130,7 +130,8 @@ class HypAgg(Module):
 
     def forward(self, x, adj):
         x_tangent = self.manifold.logmap0(x, c=self.c)
-        support_t = torch.spmm(adj, x_tangent)
+        support_t = torch.sparse.mm(adj, x_tangent)
+        # support_t = torch.spmm(adj, x_tangent)
         output = self.manifold.proj(self.manifold.expmap0(support_t, c=self.c), c=self.c)
         return output
 
