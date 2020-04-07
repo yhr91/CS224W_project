@@ -15,7 +15,6 @@ import random
 import pandas as pd
 import conv_layers
 import optimizers
-import time
 
 def train(loader, args, ind, it, epochs=2000):
     if args.use_features:
@@ -27,18 +26,19 @@ def train(loader, args, ind, it, epochs=2000):
                            +args.network_type+'_'+args.dataset+'_'+feat_str)
         
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    if args.network_type == 'GCNConv':
-        model = conv_layers.RexGCNConv(args.in_dim, args.hidden_dim, args.out_dim)
+    if args.network_type == 'HGCNConv':
+        model = conv_layers.HGCNConv(args)
     else:
         model = GNN(args.in_dim, args.hidden_dim, args.out_dim, args.network_type)
     model = model.to(device)
-    # optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    if args.network_type == 'HGCNConv':
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, weight_decay=5e-4)#optimizers.RiemannianAdam(model.parameters(), lr=0.01, weight_decay=5e-4)
+    else:
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, weight_decay=5e-4)
     criterion = F.nll_loss
     best_f1 = 0
-    model_save = copy.deepcopy(model.state_dict())
-
-    t = time.time()
+    model_save = copy.deepcopy(model.cpu())
+                           
     for epoch in range(epochs):
         model.train()
 
@@ -50,27 +50,23 @@ def train(loader, args, ind, it, epochs=2000):
             loss = criterion(out[batch.train_mask], batch.y[batch.train_mask],weight=weight)
             loss.backward()
             optimizer.step()
+            val_f1 = utils.get_acc(model, loader, is_val=True)['f1'] 
 
             # Tensorboard writing
-            if epoch % 20 == 0:
-                val_f1 = utils.get_acc(model, loader, is_val=True)['f1'] 
-                print('loss on epoch', epoch, 'is', loss.item())
+            if epoch % 50 == 0:
+                #print('loss on epoch', epoch, 'is', loss.item())
                 writer.add_scalar('TrainLoss/disease_'+str(ind), loss.item(), it*epochs+epoch)
                 writer.add_scalar('ValF1/disease_'+str(ind), val_f1, it*epochs+epoch)
 
                 val_recall = utils.get_acc(model, loader, is_val=True)['recall']
                 writer.add_scalar('ValRecall/disease_' + str(ind), val_f1, it*epochs+epoch)
-                print('Validation:', val_f1)
+                #print('Validation:', val_f1)
                 writer.flush()
             
-                # Model selection 
-                if val_f1 > best_f1:
-                    model_save = copy.deepcopy(model.state_dict())
-                    best_f1 = val_f1
-        if (epoch + 1) % 100 == 0:
-            newt = time.time()
-            print('avg time per epoch:', (newt - t) / 100)
-            t = newt
+            # Model selection 
+            if val_f1 > best_f1:
+                model_save = copy.deepcopy(model.cpu())
+                best_f1 = val_f1
 
     writer.flush()
     writer.close()
@@ -95,10 +91,12 @@ def trainer(args, num_folds=5):
     # This returns all disease indices corresponding to given disease classes
     sel_diseases = processed_data.get_disease_class_idx(['cancer'])
     processed_data.Y = processed_data.Y.iloc[:,sel_diseases]
+    print(processed_data.Y.shape)
 
     for ind, column in enumerate(processed_data.Y):
         #if ind > 5: break # TODO: Remove this later on. For testing purposes only
-        
+        print(ind,column,'out of',len(processed_data.Y)
+
         y = processed_data.Y[column].tolist()
         edges = processed_data.get_edges()
         
@@ -120,14 +118,7 @@ def trainer(args, num_folds=5):
             model_scores.append(score)
 
         best_model = models[np.argmax(model_scores)]
-        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-        if args.network_type == 'HGCNConv':
-            model = conv_layers.HGCNConv(args)
-        else:
-            model = GNN(args.in_dim, args.hidden_dim, args.out_dim, args.network_type)
-        model = model.to(device)
-        model.load_state_dict(best_model)
-        best_test_score = utils.get_acc(model, loader, is_val=False)
+        best_test_score = utils.get_acc(best_model, loader, is_val=False)
         print('Best model f1:')
         print(best_test_score)
         disease_test_scores[ind] = [best_test_score]
