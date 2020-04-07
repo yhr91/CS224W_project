@@ -30,11 +30,11 @@ def load_pyg(X, edges, y, folds=5, test_size=0.1):
 
     # Consider all edges and their reverse
     edges = [e for e in edges.numpy() if e[0] != e[1]] # Remove self edges
-    #reverse_edges = np.flip(np.array(edges),1)
-    #edges = np.concatenate([edges,reverse_edges])
-    edges = np.unique(edges,axis=0) # Remove repeats
+    reverse_edges = np.flip(np.array(edges),1)
+    edges = np.concatenate([edges,reverse_edges])
+    edges = np.unique(edges, axis=0) # Remove repeats
     edges = torch.tensor(edges, dtype=torch.long)
-                    
+
     for train_idx, val_idx in kf.split(X, y):
         data = Data(x=X, edge_index=edges.t().contiguous(), y=y)
 
