@@ -16,7 +16,7 @@ import pandas as pd
 import conv_layers
 import optimizers
 
-def train(loader, args, ind, it, epochs=250):
+def train(loader, args, ind, it, epochs=350):
     if args.use_features:
         feat_str = 'feats'
     else:
@@ -37,7 +37,7 @@ def train(loader, args, ind, it, epochs=250):
         optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
     criterion = F.nll_loss
     best_f1 = 0
-    model_save = copy.deepcopy(model.cpu())
+    model_save = copy.deepcopy(model.state_dict())
                            
     for epoch in range(epochs):
         model.train()
@@ -50,10 +50,10 @@ def train(loader, args, ind, it, epochs=250):
             loss = criterion(out[batch.train_mask], batch.y[batch.train_mask],weight=weight)
             loss.backward()
             optimizer.step()
-            val_f1 = utils.get_acc(model, loader, is_val=True)['f1'] 
 
             # Tensorboard writing
             if epoch % 20 == 0:
+                val_f1 = utils.get_acc(model, loader, is_val=True)['f1'] 
                 print('loss on epoch', epoch, 'is', loss.item())
                 writer.add_scalar('TrainLoss/disease_'+str(ind), loss.item(), it*epochs+epoch)
                 writer.add_scalar('ValF1/disease_'+str(ind), val_f1, it*epochs+epoch)
@@ -63,10 +63,10 @@ def train(loader, args, ind, it, epochs=250):
                 print('Validation:', val_f1)
                 writer.flush()
             
-            # Model selection 
-            if val_f1 > best_f1:
-                model_save = copy.deepcopy(model.cpu())
-                best_f1 = val_f1
+                # Model selection 
+                if val_f1 > best_f1:
+                    model_save = copy.deepcopy(model.state_dict())
+                    best_f1 = val_f1
 
     writer.flush()
     writer.close()
@@ -116,7 +116,14 @@ def trainer(args, num_folds=5):
             model_scores.append(score)
 
         best_model = models[np.argmax(model_scores)]
-        best_test_score = utils.get_acc(best_model, loader, is_val=False)
+        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        if args.network_type == 'HGCNConv':
+            model = conv_layers.HGCNConv(args)
+        else:
+            model = GNN(args.in_dim, args.hidden_dim, args.out_dim, args.network_type)
+        model = model.to(device)
+        model.load_state_dict(best_model)
+        best_test_score = utils.get_acc(model, loader, is_val=False)
         print('Best model f1:')
         print(best_test_score)
         disease_test_scores[ind] = [best_test_score]
