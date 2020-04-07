@@ -137,3 +137,51 @@ class HGCNConv(nn.Module):
         h = self.encoder.encode(x, self.adj_mat)
         output = self.decoder.decode(h, self.adj_mat)
         return F.log_softmax(output, dim=1)
+
+
+class RexGCNConv(nn.Module):
+    def __init__(self, in_dim, hidden_dim, out_dim):
+        super(RexGCNConv, self).__init__()
+
+        self.act = F.relu
+        self.in_dim = in_dim
+        self.hidden_dim = hidden_dim
+        self.out_dim = out_dim
+        self.num_layers = 2
+        self.dropout = 0.2
+
+        self.adj_mat = None
+        modules = []
+        modules.append(layers.GraphConvolution(in_dim, hidden_dim, self.dropout, self.act, True))
+        for l in range(self.num_layers - 1):
+            modules.append(layers.GraphConvolution(hidden_dim, hidden_dim, self.dropout, self.act, True))
+        self.conv = nn.Sequential(*modules)
+        
+        self.post_mp = nn.Sequential(
+            nn.Linear(self.hidden_dim, self.hidden_dim), nn.Dropout(self.dropout), 
+            nn.Linear(self.hidden_dim, self.out_dim))
+    
+    def convert_to_adj(self, edge_index, num_nodes):
+        '''we want [2, E] -> [N, N]'''
+        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        edge_index = edge_index.to(device)
+        vals = torch.ones(edge_index.shape[1], device=device)
+        adj_mat = torch.sparse.FloatTensor(edge_index, vals, (num_nodes, num_nodes)).to(device)
+        self.adj_mat = adj_mat
+    
+    def forward(self, data):
+        '''
+        data.x shape: [N, feats]
+        data.edge_index shape: [2, E]
+        '''
+        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        x = data.x
+        if data.num_node_features == 0:
+            x = torch.ones(data.num_nodes, 1, device=device)
+
+        if self.adj_mat is None:
+            self.convert_to_adj(data.edge_index, len(x))
+        
+        x, _ = self.conv((x, self.adj_mat))
+        x = self.post_mp(x)
+        return F.log_softmax(x, dim=1)

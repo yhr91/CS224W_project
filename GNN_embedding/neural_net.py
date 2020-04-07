@@ -52,7 +52,6 @@ class GNN(nn.Module):
 
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
-        
 
         if data.num_node_features == 0:
             x = torch.ones(data.num_nodes, 1)

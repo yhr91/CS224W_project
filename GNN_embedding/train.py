@@ -26,15 +26,13 @@ def train(loader, args, ind, it, epochs=250):
                            +args.network_type+'_'+args.dataset+'_'+feat_str)
         
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    if args.network_type == 'HGCNConv':
-        model = conv_layers.HGCNConv(args)
+    if args.network_type == 'GCNConv':
+        model = conv_layers.RexGCNConv(args.in_dim, args.hidden_dim, args.out_dim)
     else:
         model = GNN(args.in_dim, args.hidden_dim, args.out_dim, args.network_type)
     model = model.to(device)
-    if args.network_type == 'HGCNConv':
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)#optimizers.RiemannianAdam(model.parameters(), lr=0.01, weight_decay=5e-4)
-    else:
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
     criterion = F.nll_loss
     best_f1 = 0
     model_save = copy.deepcopy(model.cpu())
