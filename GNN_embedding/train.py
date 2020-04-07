@@ -15,8 +15,9 @@ import random
 import pandas as pd
 import conv_layers
 import optimizers
+import time
 
-def train(loader, args, ind, it, epochs=350):
+def train(loader, args, ind, it, epochs=2000):
     if args.use_features:
         feat_str = 'feats'
     else:
@@ -32,11 +33,12 @@ def train(loader, args, ind, it, epochs=350):
         model = GNN(args.in_dim, args.hidden_dim, args.out_dim, args.network_type)
     model = model.to(device)
     # optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     criterion = F.nll_loss
     best_f1 = 0
     model_save = copy.deepcopy(model.state_dict())
-                           
+
+    t = time.time()
     for epoch in range(epochs):
         model.train()
 
@@ -65,6 +67,10 @@ def train(loader, args, ind, it, epochs=350):
                 if val_f1 > best_f1:
                     model_save = copy.deepcopy(model.state_dict())
                     best_f1 = val_f1
+        if (epoch + 1) % 100 == 0:
+            newt = time.time()
+            print('avg time per epoch:', (newt - t) / 100)
+            t = newt
 
     writer.flush()
     writer.close()

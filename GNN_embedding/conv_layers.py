@@ -6,8 +6,8 @@ import torch_geometric.nn as pyg_nn
 import torch_geometric.utils as pyg_utils
 
 from torch_scatter import scatter
-import layers, manifolds, models, optimizers, h_utils
 from models import encoders, decoders
+from layers import layers
 
 class SAGEConv(pyg_nn.MessagePassing):
     def __init__(self, in_channels, out_channels, normalize=True, aggr='mean',
