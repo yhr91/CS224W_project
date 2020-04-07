@@ -44,7 +44,7 @@ class GraphConvolution(Module):
         hidden = self.linear.forward(x)
         hidden = F.dropout(hidden, self.dropout, training=self.training)
         if adj.is_sparse:
-            support = torch.spmm(adj, hidden)
+            support = torch.sparse.mm(adj, hidden)
         else:
             support = torch.mm(adj, hidden)
         output = self.act(support), adj
