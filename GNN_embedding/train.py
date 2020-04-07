@@ -16,7 +16,7 @@ import pandas as pd
 import conv_layers
 import optimizers
 
-def train(loader, args, ind, it, epochs=250):
+def train(loader, args, ind, it, epochs=500):
     if args.use_features:
         feat_str = 'feats'
     else:
@@ -32,9 +32,9 @@ def train(loader, args, ind, it, epochs=250):
         model = GNN(args.in_dim, args.hidden_dim, args.out_dim, args.network_type)
     model = model.to(device)
     if args.network_type == 'HGCNConv':
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)#optimizers.RiemannianAdam(model.parameters(), lr=0.01, weight_decay=5e-4)
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, weight_decay=5e-4)#optimizers.RiemannianAdam(model.parameters(), lr=0.01, weight_decay=5e-4)
     else:
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, weight_decay=5e-4)
     criterion = F.nll_loss
     best_f1 = 0
     model_save = copy.deepcopy(model.cpu())
@@ -53,14 +53,14 @@ def train(loader, args, ind, it, epochs=250):
             val_f1 = utils.get_acc(model, loader, is_val=True)['f1'] 
 
             # Tensorboard writing
-            if epoch % 20 == 0:
-                print('loss on epoch', epoch, 'is', loss.item())
+            if epoch % 50 == 0:
+                #print('loss on epoch', epoch, 'is', loss.item())
                 writer.add_scalar('TrainLoss/disease_'+str(ind), loss.item(), it*epochs+epoch)
                 writer.add_scalar('ValF1/disease_'+str(ind), val_f1, it*epochs+epoch)
 
                 val_recall = utils.get_acc(model, loader, is_val=True)['recall']
                 writer.add_scalar('ValRecall/disease_' + str(ind), val_f1, it*epochs+epoch)
-                print('Validation:', val_f1)
+                #print('Validation:', val_f1)
                 writer.flush()
             
             # Model selection 
@@ -91,10 +91,12 @@ def trainer(args, num_folds=5):
     # This returns all disease indices corresponding to given disease classes
     sel_diseases = processed_data.get_disease_class_idx(['cancer'])
     processed_data.Y = processed_data.Y.iloc[:,sel_diseases]
+    print(processed_data.Y.shape)
 
     for ind, column in enumerate(processed_data.Y):
         #if ind > 5: break # TODO: Remove this later on. For testing purposes only
-        
+        print(ind,column,'out of',len(processed_data.Y)
+
         y = processed_data.Y[column].tolist()
         edges = processed_data.get_edges()
         
