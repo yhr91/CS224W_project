@@ -15,6 +15,39 @@ import torch
 from torch_geometric.data import Data, DataLoader
 from sklearn.metrics import f1_score
 
+def load_pyg_new(X, edges, y, folds=10, val_size=0.1):
+    '''
+    First, remove self-edges and ensure graph is undirected.
+    Then, load data according to k-fold cross validation. First do a
+    stratified split on y, creating the k hold-out test sets. Then,
+    do a stratified split on the remaining 90% of the data, creating
+    train and validation sets.
+    Yields:
+        a DataLoader for each fold
+    '''
+    edges = [e for e in edges if e[0] != e[1]] # Remove self edges
+    reverse_edges = torch.flip(edges, 1)
+    edges = torch.cat([edges, reverse_edges])
+    edges = torch.unique(edges, dim=0) # Remove repeats
+    edges = edges.type(torch.long)
+
+    # each fold is simply going to change its train/val/test idx
+    data = Data(x=X, edge_index=edges.t().contiguous(), y=y)
+
+    kf = StratifiedKFold(n_splits=folds, shuffle=True, random_state=2)
+    for train_val_idx, test_idx in kf.split(X, y):
+        # further split train_val_idx, stratify according to its labels
+        train_idx, val_idx = train_test_split(train_val_idx, test_size=val_size,
+            stratify=y[train_val_idx], random_state=3)
+
+        train_mask = torch.zeros(len(X), dtype=torch.bool)
+        val_mask = torch.zeros(len(X), dtype=torch.bool)
+        test_mask = torch.zeros(len(X), dtype=torch.bool)
+
+        train_mask[train_idx] = val_mask[val_idx] = test_mask[test_idx] = 1
+        data.train_mask, data.val_mask, data.test_mask = train_mask, val_mask, test_mask
+        loader = DataLoader([data], batch_size=32) # shuffling done at train time (is this true? were not batching)
+        yield loader
 
 # This version of load pyg is designed to work with recall@100 metric
 # It does not require an even class split in the test set
@@ -40,7 +73,6 @@ def load_pyg(X, edges, y, folds=5, test_size=0.1):
 
         train_mask = [int(i in train_idx and i not in test_idx) for i in range(len(X))]
         val_mask = [int(i in val_idx and i not in test_idx) for i in range(len(y))]
-        #val_mask = sample_from_mask(val_mask, y, int(0.1*y.sum().numpy()))
         test_mask = [int(i in test_idx) for i in range(len(X))]
 
         data.train_mask = torch.tensor(train_mask, dtype=torch.bool)
@@ -49,24 +81,6 @@ def load_pyg(X, edges, y, folds=5, test_size=0.1):
 
         loader = DataLoader([data], batch_size=32) # shuffling done at train time
         yield loader
-
-
-# Identifies k nodes form each class within a given mask and removes
-# all other nodes from the mask
-def sample_from_mask(mask, y, k):
-    counts = {}
-    counts[0] = 0
-    counts[1] = 0
-    y_ = y.cpu().numpy()
-    for i, val in enumerate(mask):
-        if val:
-            if y_[i] == 0:
-                counts[0] += 1
-            else:
-                counts[1] += 1
-            if counts[y_[i]] > k:
-                mask[i] = False
-    return mask
 
 
 # Evaluates the validation, test accuracy

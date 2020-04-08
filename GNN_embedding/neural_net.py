@@ -11,8 +11,8 @@ import conv_layers
 from layers import layers
 
 def get_neural_network(args):
-    if args.network_type == 'GCNConv': # slowly add more of these
-        model = RexGCNConv(args.in_dim, args.hidden_dim, args.out_dim)
+    if args.network_type == 'SAGEConvMean': # slowly add more of these
+        model = RexSAGEConv(args.in_dim, args.hidden_dim, args.out_dim)
     else:
         model = GNN(args.in_dim, args.hidden_dim, args.out_dim, model_type=args.network_type)
     return model
@@ -179,6 +179,6 @@ class RexSAGEConv(nn.Module):
         if self.adj_mat is None:
             self.convert_to_adj(data.edge_index, len(x))
         x, _ = self.conv((x, self.adj_mat))
-        x = F.normalize(x, p=2, dim=1) # should we do this?
+        # x = F.normalize(x, p=2, dim=1) # should we do this?
         x = self.post_mp(x)
         return F.log_softmax(x, dim=1)
