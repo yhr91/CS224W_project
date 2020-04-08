@@ -60,7 +60,7 @@ def train(loader, args, ind, it):
                 
                 if epoch % 100 == 0:
                     print('loss on epoch', epoch, 'is', loss.item())
-                    # writer.flush() # NOTE: REMOVE THIS!!!
+                    writer.flush() # NOTE: REMOVE THIS!!!
         # if (epoch + 1) % 100 == 0:
         #     newt = time.time()
         #     print('avg time per epoch:', (newt - t) / 100)
@@ -137,7 +137,7 @@ if __name__ == '__main__':
     parser.add_argument('--out-dim', type=int, default=2)
     parser.add_argument('--num-heads', type=int, default=3)
     parser.add_argument('--epochs', type=int, default=2000)
-    parser.add_argument('--lr', type=float, default=0.0005)
+    parser.add_argument('--lr', type=float, default=0.0001)
     args = parser.parse_args()
     
     if not args.use_features and args.in_dim > 1:

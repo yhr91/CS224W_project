@@ -27,27 +27,48 @@ def get_dim_act(args):
 
 
 class GraphConvolution(Module):
-    """
-    Simple GCN layer.
-    """
-
     def __init__(self, in_features, out_features, dropout, act, use_bias):
         super(GraphConvolution, self).__init__()
         self.dropout = dropout
         self.linear = nn.Linear(in_features, out_features, use_bias)
         self.act = act
-        self.in_features = in_features
-        self.out_features = out_features
 
     def forward(self, input):
         x, adj = input
         hidden = self.linear.forward(x)
-        hidden = F.dropout(hidden, self.dropout, training=self.training)
         if adj.is_sparse:
-            support = torch.sparse.mm(adj, hidden)
+            hidden = torch.sparse.mm(adj, hidden)
         else:
-            support = torch.mm(adj, hidden)
-        output = self.act(support), adj
+            hidden = torch.mm(adj, hidden)
+        hidden = F.dropout(hidden, self.dropout, training=self.training)
+        output = self.act(hidden), adj
+        return output
+
+    def extra_repr(self):
+        return 'input_dim={}, output_dim={}'.format(
+                self.in_features, self.out_features
+        )
+
+class GraphSAGEConvolution(Module):
+    def __init__(self, in_features, out_features, dropout, act, use_bias):
+        super(GraphSAGEConvolution, self).__init__()
+        self.dropout = dropout
+        self.linear = nn.Linear(in_features * 2, out_features, use_bias)
+        self.act = act
+
+    def forward(self, input):
+        '''
+        sum the neighbors and then concat
+        '''
+        x, adj = input
+        if adj.is_sparse:
+            support = torch.sparse.mm(adj, x)
+        else:
+            support = torch.mm(adj, x)
+        x = torch.cat((x, support), dim=1)
+        x = self.linear.forward(x)
+        x = F.dropout(x, self.dropout, training=self.training)
+        output = self.act(x), adj
         return output
 
     def extra_repr(self):
