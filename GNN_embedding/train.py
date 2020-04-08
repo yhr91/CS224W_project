@@ -146,7 +146,7 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', type=int, default=2000)
     parser.add_argument('--lr', type=float, default=0.0001)
     args = parser.parse_args()
-    
+
     if not args.use_features and args.in_dim > 1:
         print('Cannot have in dim of', args.in_dim, 'changing to 1.')
         args.in_dim = 1
