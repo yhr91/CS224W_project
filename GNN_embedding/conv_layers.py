@@ -19,7 +19,8 @@ class SAGEConv(pyg_nn.MessagePassing):
             concat
             transform_mess: if true, pass messages through linear function before propagating
         '''
-        super(SAGEConv, self).__init__(aggr=aggr)
+        super(SAGEConv, self).__init__()
+        self.aggr = aggr
 
         self.in_channels = in_channels
         self.out_channels = out_channels
