@@ -12,9 +12,7 @@ import utils
 from torch.utils.tensorboard import SummaryWriter
 import copy
 import random
-import pandas as pd
-import conv_layers
-import optimizers
+import itertools
 
 def train(loaders, args, ind, it):
     if args.MTL==False:
@@ -125,7 +123,7 @@ def trainer(args, num_folds=5):
     dir_ = './tensorboard_runs/'+args.expt_name
 
     # This returns all disease indices corresponding to given disease classes
-    sel_diseases = processed_data.get_disease_class_idx(['cancer'])[:2]
+    sel_diseases = processed_data.get_disease_class_idx(['cancer'])
     args.tasks = len(sel_diseases)
     processed_data.Y = processed_data.Y.iloc[:,sel_diseases]
 
@@ -154,7 +152,7 @@ def trainer(args, num_folds=5):
             loaders = []
             # Iterate over diseases
             for it, loader_all_folds in enumerate(data_generators):
-                loaders.append(loader_all_folds[f])  #Pick the same fold for each disease
+                loaders.append(next(loader_all_folds))       #Pick the same fold for each disease
 
             # Use the list of training datasets for all diseases at a specifc fold to train
             model, score = train(loaders, args, ind, it)
@@ -169,9 +167,9 @@ def trainer(args, num_folds=5):
         model = model.to(device)
         model.load_state_dict(best_model)
 
-        best_test_scores = []
         for it, loader_all_folds in enumerate(data_generators):
-            disease_test_scores[it] = utils.get_acc(model, loader_all_folds[0], is_val=False, task=it)
+            disease_test_scores[it] = utils.get_acc(model, loaders[it],
+                                                    is_val=False, task=it)
 
         # Save results
         np.save(dir_ + '/results', disease_test_scores)

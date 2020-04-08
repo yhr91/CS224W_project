@@ -68,7 +68,6 @@ def load_pyg(X, edges, y, folds=5, test_size=0.1):
     edges = np.unique(edges, axis=0) # Remove repeats
     edges = torch.tensor(edges, dtype=torch.long)
 
-    loaders=[]
     for train_idx, val_idx in kf.split(X, y):
         data = Data(x=X, edge_index=edges.t().contiguous(), y=y)
 
@@ -81,8 +80,7 @@ def load_pyg(X, edges, y, folds=5, test_size=0.1):
         data.test_mask = torch.tensor(test_mask, dtype=torch.bool)
 
         loader = DataLoader([data], batch_size=32) # shuffling done at train time
-        loaders.append(loader)
-    return loaders
+        yield loader
 
 
 # Evaluates the validation, test accuracy
