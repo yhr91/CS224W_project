@@ -125,7 +125,7 @@ def trainer(args, num_folds=5):
     dir_ = './tensorboard_runs/'+args.expt_name
 
     # This returns all disease indices corresponding to given disease classes
-    sel_diseases = processed_data.get_disease_class_idx(['cancer'])
+    sel_diseases = processed_data.get_disease_class_idx(['cancer'])[:2]
     args.tasks = len(sel_diseases)
     processed_data.Y = processed_data.Y.iloc[:,sel_diseases]
 
@@ -225,13 +225,13 @@ if __name__ == '__main__':
     parser.add_argument('--network-type', type=str, choices=['GCNConv', 'SAGEConvMean', 'SAGEConvMin', 'SAGEConvMax', 'HGCNConv', 'GATConv'], default='GCNConv')
     parser.add_argument('--dataset', type=str, choices=['Decagon', 'GNBR', 'Decagon_GNBR'], default='GNBR')
     parser.add_argument('--expt_name', type=str, default=dt)
-    parser.add_argument('--use-features', type=bool, nargs='?', const=True, default=False)
+    parser.add_argument('--use-features', type=bool, nargs='?', const=True, default=True)
     parser.add_argument('--MTL', type=bool, default=True)
     parser.add_argument('--in-dim', type=int, default=11)
     parser.add_argument('--hidden-dim', type=int, default=24)
     parser.add_argument('--out-dim', type=int, default=2)
     parser.add_argument('--num-heads', type=int, default=3)
-    parser.add_argument('--epochs', type=int, default=1000)
+    parser.add_argument('--epochs', type=int, default=3000)
     parser.add_argument('--lr', type=float, default=0.0001)
     args = parser.parse_args()
 
