@@ -101,22 +101,22 @@ class RexGCNConv(nn.Module):
         self_loops = torch.stack((torch.arange(num_nodes), torch.arange(num_nodes)))
         edge_index = torch.cat((edge_index, self_loops), dim=1)
 
+        # push to device
+        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        edge_index = edge_index.to(device)
+
         # # edge weights: divide by node degree to get the mean
         # vals = torch.ones(edge_index.shape[1])
         # degs = scatter(vals, edge_index[0], dim=0, dim_size=num_nodes, reduce='sum')
         # vals = vals / degs[edge_index[0]] # divide by node degree
 
         # do true GCN
-        vals = torch.ones(edge_index.shape[1])
+        vals = torch.ones(edge_index.shape[1], device=device)
         degs = scatter(vals, edge_index[0], dim=0, dim_size=num_nodes, reduce='sum')
         degs_inv = degs.pow(-0.5)
         degs_inv[degs_inv == float('inf')] = 0
         vals = degs_inv[edge_index[0]] * vals * degs_inv[edge_index[1]]
 
-        # push to device
-        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-        edge_index = edge_index.to(device) # coordinates to put values
-        vals = vals.to(device)
         adj_mat = torch.sparse.FloatTensor(edge_index, vals, (num_nodes, num_nodes)).to(device)
         self.adj_mat = adj_mat
     
@@ -158,15 +158,15 @@ class RexSAGEConv(nn.Module):
     
     def convert_to_adj(self, edge_index, num_nodes):
         '''we want [2, E] -> [N, N]'''
-        # edge weights: divide by node degree to get the mean
-        vals = torch.ones(edge_index.shape[1])
-        degs = scatter(vals, edge_index[0], dim=0, dim_size=num_nodes, reduce='sum')
-        vals = vals / degs[edge_index[0]] # divide by node degree
-
         # push to device
         device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         edge_index = edge_index.to(device) # coordinates to put values
-        vals = vals.to(device)
+
+        # edge weights: divide by node degree to get the mean
+        vals = torch.ones(edge_index.shape[1], device=device)
+        degs = scatter(vals, edge_index[0], dim=0, dim_size=num_nodes, reduce='sum')
+        vals = vals / degs[edge_index[0]] # divide by node degree
+
         adj_mat = torch.sparse.FloatTensor(edge_index, vals, (num_nodes, num_nodes)).to(device)
         self.adj_mat = adj_mat
     
