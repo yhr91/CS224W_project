@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from datetime import datetime
 import numpy as np
 from load_assoc import ProcessData
-from neural_net import GNN
+import neural_net
 import utils
 from torch.utils.tensorboard import SummaryWriter
 import copy
@@ -16,7 +16,7 @@ import pandas as pd
 import conv_layers
 import optimizers
 
-def train(loader, args, ind, it, epochs=2000):
+def train(loader, args, ind, it):
     if args.use_features:
         feat_str = 'feats'
     else:
@@ -24,21 +24,18 @@ def train(loader, args, ind, it, epochs=2000):
 
     writer = SummaryWriter('./tensorboard_runs/'+args.expt_name+'/'
                            +args.network_type+'_'+args.dataset+'_'+feat_str)
-        
+
+    # retrieve the requested NN model + push to device
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    if args.network_type == 'HGCNConv':
-        model = conv_layers.HGCNConv(args)
-    else:
-        model = GNN(args.in_dim, args.hidden_dim, args.out_dim, args.network_type)
+    model = neural_net.get_neural_network(args)
     model = model.to(device)
-    if args.network_type == 'HGCNConv':
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, weight_decay=5e-4)#optimizers.RiemannianAdam(model.parameters(), lr=0.01, weight_decay=5e-4)
-    else:
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, weight_decay=5e-4)
+    
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     criterion = F.nll_loss
     best_f1 = 0
-    model_save = copy.deepcopy(model.cpu())
-                           
+    model_save = copy.deepcopy(model.state_dict())
+
+    epochs = args.epochs
     for epoch in range(epochs):
         model.train()
 
@@ -47,31 +44,32 @@ def train(loader, args, ind, it, epochs=2000):
             optimizer.zero_grad()
             out = model(batch)
             weight = utils.get_weight(batch.y, device=device)
-            loss = criterion(out[batch.train_mask], batch.y[batch.train_mask],weight=weight)
+            loss = criterion(out[batch.train_mask], batch.y[batch.train_mask], weight=weight)
             loss.backward()
             optimizer.step()
-            val_f1 = utils.get_acc(model, loader, is_val=True)['f1'] 
 
-            # Tensorboard writing
+            # Tensorboard writing and evaluate validation f1
             if epoch % 50 == 0:
-                #print('loss on epoch', epoch, 'is', loss.item())
+                res = utils.get_acc(model, loader, is_val=True)
                 writer.add_scalar('TrainLoss/disease_'+str(ind), loss.item(), it*epochs+epoch)
-                writer.add_scalar('ValF1/disease_'+str(ind), val_f1, it*epochs+epoch)
-
-                val_recall = utils.get_acc(model, loader, is_val=True)['recall']
-                writer.add_scalar('ValRecall/disease_' + str(ind), val_f1, it*epochs+epoch)
-                #print('Validation:', val_f1)
-                writer.flush()
+                writer.add_scalar('ValF1/disease_'+str(ind), res['f1'], it*epochs+epoch)
+                writer.add_scalar('ValRecall/disease_' + str(ind), res['recall'], it*epochs+epoch)
             
-            # Model selection 
-            if val_f1 > best_f1:
-                model_save = copy.deepcopy(model.cpu())
-                best_f1 = val_f1
+                # Model selection
+                if res['f1'] > best_f1:
+                    model_save = copy.deepcopy(model.state_dict())
+                    best_f1 = res['f1']
+                
+                if not torch.cuda.is_available():
+                    # if training locally, print out progress, otherwise remove all I/O
+                    # to speed up training
+                    if epoch % 100 == 0:
+                        print('loss on epoch', epoch, 'is', loss.item())
+                        writer.flush()
 
     writer.flush()
     writer.close()
     return model_save, best_f1
-
 
 def trainer(args, num_folds=5):
     edgelist_file = {
@@ -91,11 +89,10 @@ def trainer(args, num_folds=5):
     # This returns all disease indices corresponding to given disease classes
     sel_diseases = processed_data.get_disease_class_idx(['cancer'])
     processed_data.Y = processed_data.Y.iloc[:,sel_diseases]
-    print(processed_data.Y.shape)
 
     for ind, column in enumerate(processed_data.Y):
         #if ind > 5: break # TODO: Remove this later on. For testing purposes only
-        print(ind,column,'out of',len(processed_data.Y)
+        print(ind,column,'out of',len(processed_data.Y))
 
         y = processed_data.Y[column].tolist()
         edges = processed_data.get_edges()
@@ -107,7 +104,7 @@ def trainer(args, num_folds=5):
         test_size = .1
         data_generator = utils.load_pyg(X, edges, y,
                                         folds=num_folds, test_size=test_size)
-            
+
         # 5-fold cross validation
         models = [] # save models for now
         model_scores = [] # save model recalls
@@ -118,7 +115,14 @@ def trainer(args, num_folds=5):
             model_scores.append(score)
 
         best_model = models[np.argmax(model_scores)]
-        best_test_score = utils.get_acc(best_model, loader, is_val=False)
+        
+        # retrieve the state dict of the best-performing model, load into new model
+        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        model = neural_net.get_neural_network(args)
+        model = model.to(device)
+        model.load_state_dict(best_model)
+        
+        best_test_score = utils.get_acc(model, loader, is_val=False)
         print('Best model f1:')
         print(best_test_score)
         disease_test_scores[ind] = [best_test_score]
@@ -136,9 +140,11 @@ if __name__ == '__main__':
     parser.add_argument('--expt_name', type=str, default=dt)
     parser.add_argument('--use-features', type=bool, nargs='?', const=True, default=False)
     parser.add_argument('--in-dim', type=int, default=11)
-    parser.add_argument('--hidden-dim', type=int, default=32)
+    parser.add_argument('--hidden-dim', type=int, default=24)
     parser.add_argument('--out-dim', type=int, default=2)
     parser.add_argument('--num-heads', type=int, default=3)
+    parser.add_argument('--epochs', type=int, default=2000)
+    parser.add_argument('--lr', type=float, default=0.0001)
     args = parser.parse_args()
     
     if not args.use_features and args.in_dim > 1:
