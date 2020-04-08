@@ -43,6 +43,7 @@ def train(loaders, args, ind, it):
         model.train()
         it = 0
         loss_sum = 0
+        f1_sum = 0
 
         # If MLT, iterate over all diseases, if not then just single disease
         for task_i,loader in enumerate(loaders):
@@ -70,6 +71,7 @@ def train(loaders, args, ind, it):
                 if epoch % 50 == 0:
                     if args.MTL:
                         res = utils.get_acc(model, loader, is_val=True, task=task_i)
+                        f1_sum += res['f1']
                     else:
                         res = utils.get_acc(model, loader, is_val=True, task=None)
                     writer.add_scalar('TrainLoss/disease_'+str(ind), loss.item(), it*epochs+epoch)
@@ -93,6 +95,11 @@ def train(loaders, args, ind, it):
         if args.MTL:
             print('Overall MTL loss on epoch', epoch, 'is', loss_sum)
             writer.add_scalar('MTL/TrainLoss' + str(ind), loss_sum, it * epochs + epoch)
+
+            # Use the sum of F1's over all the diseases to select a paricular multi task model
+            if f1_sum > best_f1:
+                model_save = copy.deepcopy(model.state_dict())
+                best_f1 = f1_sum
 
     writer.flush()
     writer.close()
@@ -152,18 +159,15 @@ def trainer(args, num_folds=5):
 
         best_model = models[np.argmax(model_scores)]
 
-        # TO-DO: Have to align the testing section with MLT
-
         # retrieve the state dict of the best-performing model, load into new model
         device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         model = neural_net.get_neural_network(args)
         model = model.to(device)
         model.load_state_dict(best_model)
 
-        best_test_score = utils.get_acc(model, loader, is_val=False)
-        print('Best model f1:')
-        print(best_test_score)
-        disease_test_scores[ind] = [best_test_score]
+        best_test_scores = []
+        for it, loader_all_folds in enumerate(data_generators):
+            disease_test_scores[it] = utils.get_acc(model, loader_all_folds[0], is_val=False, task=it)
 
         # Save results
         np.save(dir_ + '/results', disease_test_scores)
@@ -223,7 +227,7 @@ if __name__ == '__main__':
     parser.add_argument('--hidden-dim', type=int, default=24)
     parser.add_argument('--out-dim', type=int, default=2)
     parser.add_argument('--num-heads', type=int, default=3)
-    parser.add_argument('--epochs', type=int, default=2000)
+    parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--lr', type=float, default=0.0001)
     args = parser.parse_args()
 
