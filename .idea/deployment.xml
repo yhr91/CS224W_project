@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="Yusuf@35.247.70.81:22">
+  <component name="PublishConfigData" autoUpload="Always" serverName="Yusuf@34.83.111.177:22" showNewOnSourceInSync="false">
     <serverData>
+      <paths name="Yusuf@34.83.111.177:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/Yusuf/CS224W_project" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
       <paths name="Yusuf@34.91.19.147:22">
         <serverdata>
           <mappings>
@@ -23,6 +30,20 @@
           </mappings>
         </serverdata>
       </paths>
+      <paths name="Yusuf@35.197.98.255:22 (1)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/Yusuf/CS224W_project" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="Yusuf@35.197.98.255:22 (2)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/Yusuf/CS224W_project" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
       <paths name="Yusuf@35.247.70.81:22">
         <serverdata>
           <mappings>
@@ -38,6 +59,13 @@
         </serverdata>
       </paths>
       <paths name="Yusuf@35.247.70.81:22 (3)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/Yusuf/CS224W_project" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="Yusuf@35.247.70.81:22 (4)">
         <serverdata>
           <mappings>
             <mapping deploy="/home/Yusuf/CS224W_project" local="$PROJECT_DIR$" />

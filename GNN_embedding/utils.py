@@ -84,7 +84,7 @@ def load_pyg(X, edges, y, folds=5, test_size=0.1):
 
 
 # Evaluates the validation, test accuracy
-def get_acc(model, loader, is_val=False, k=100):
+def get_acc(model, loader, is_val=False, k=100, task=None):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     probs = []
     model.eval()
@@ -94,6 +94,8 @@ def get_acc(model, loader, is_val=False, k=100):
         data = data.to(device)
         with torch.no_grad():
             output = model(data)
+            if task is not None:
+                output = model.tasks[task](output)
             prob = output.cpu().numpy()[:,1]
             pred = output.max(dim=1)[1]
             label = data.y
