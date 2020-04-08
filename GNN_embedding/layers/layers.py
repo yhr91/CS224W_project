@@ -57,9 +57,7 @@ class GraphSAGEConvolution(Module):
         self.act = act
 
     def forward(self, input):
-        '''
-        sum the neighbors and then concat
-        '''
+        '''sum the neighbors and then concat'''
         x, adj = input
         if adj.is_sparse:
             support = torch.sparse.mm(adj, x)

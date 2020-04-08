@@ -46,7 +46,7 @@ def load_pyg_new(X, edges, y, folds=10, val_size=0.1):
 
         train_mask[train_idx] = val_mask[val_idx] = test_mask[test_idx] = 1
         data.train_mask, data.val_mask, data.test_mask = train_mask, val_mask, test_mask
-        loader = DataLoader([data], batch_size=32) # shuffling done at train time (is this true? were not batching)
+        loader = DataLoader([data], batch_size=32)
         yield loader
 
 # This version of load pyg is designed to work with recall@100 metric
