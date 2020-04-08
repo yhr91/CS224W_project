@@ -121,7 +121,7 @@ class ProcessData:
 
     # TODO normalize features
     def load_uniprot_features(self):
-        df = pd.read_pickle("../Data/uniprot_protein_features.pkl")
+        df = pd.read_pickle("../Data/uniprot_ptm_features.pkl")
         df = df.fillna(0)
         # Convert to binary features (rather than some features being counts)
         # print(df.columns)
