@@ -14,13 +14,15 @@ def get_neural_network(args):
     if args.network_type == 'SAGEConvMean': # slowly add more of these
         model = RexSAGEConv(args.in_dim, args.hidden_dim, args.out_dim)
     else:
-        model = GNN(args.in_dim, args.hidden_dim, args.out_dim, model_type=args.network_type)
+        model = GNN(args.in_dim, args.hidden_dim, args.out_dim, tasks=args.tasks,
+                    model_type=args.network_type)
     return model
 
 class GNN(nn.Module):
-    def __init__(self, in_dim=1, hidden_dim=1, out_dim=1, num_layers=2,
+    def __init__(self, in_dim=1, hidden_dim=1, out_dim=1, tasks=1, num_layers=2,
             dropout=0.2, model_type='GCNConv'):
         super(GNN, self).__init__()
+        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
         self.model_type = model_type
         self.num_layers = num_layers
@@ -34,9 +36,17 @@ class GNN(nn.Module):
             self.layers.append(self.build_model(hidden_dim * mult, hidden_dim))
 
         # post-message-passing
-        self.post_mp = nn.Sequential(
-            nn.Linear(hidden_dim * mult, hidden_dim), nn.Dropout(self.dropout), 
-            nn.Linear(hidden_dim, out_dim))
+        if tasks>1: # to handle Multi task learning
+            self.post_mp = nn.Sequential(
+                nn.Linear(hidden_dim * mult, hidden_dim), nn.Dropout(self.dropout))
+            self.tasks = []
+            for i in range(tasks):
+                self.tasks.append(nn.Linear(hidden_dim, out_dim))
+                self.tasks[i].to(device)
+        else:
+            self.post_mp = nn.Sequential(
+                nn.Linear(hidden_dim * mult, hidden_dim), nn.Dropout(self.dropout),
+                nn.Linear(hidden_dim, out_dim))
     
     def build_model(self, in_dim, out_dim):
         if self.model_type == 'SAGEConvMean':

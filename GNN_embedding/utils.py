@@ -68,6 +68,7 @@ def load_pyg(X, edges, y, folds=5, test_size=0.1):
     edges = np.unique(edges, axis=0) # Remove repeats
     edges = torch.tensor(edges, dtype=torch.long)
 
+    loaders=[]
     for train_idx, val_idx in kf.split(X, y):
         data = Data(x=X, edge_index=edges.t().contiguous(), y=y)
 
@@ -80,11 +81,12 @@ def load_pyg(X, edges, y, folds=5, test_size=0.1):
         data.test_mask = torch.tensor(test_mask, dtype=torch.bool)
 
         loader = DataLoader([data], batch_size=32) # shuffling done at train time
-        yield loader
+        loaders.append(loader)
+    return loaders
 
 
 # Evaluates the validation, test accuracy
-def get_acc(model, loader, is_val=False, k=100):
+def get_acc(model, loader, is_val=False, k=100, task=None):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     probs = []
     model.eval()
@@ -94,6 +96,8 @@ def get_acc(model, loader, is_val=False, k=100):
         data = data.to(device)
         with torch.no_grad():
             output = model(data)
+            if task is not None:
+                output = model.tasks[task](output)
             prob = output.cpu().numpy()[:,1]
             pred = output.max(dim=1)[1]
             label = data.y
