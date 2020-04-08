@@ -38,7 +38,7 @@ class GNN(nn.Module):
         # post-message-passing
         if tasks>1: # to handle Multi task learning
             self.post_mp = nn.Sequential(
-                nn.Linear(hidden_dim * mult, hidden_dim), nn.Dropout(self.dropout))
+                nn.Linear(hidden_dim * mult, hidden_dim))
             self.tasks = []
             for i in range(tasks):
                 self.tasks.append(nn.Linear(hidden_dim, out_dim))
@@ -77,7 +77,8 @@ class GNN(nn.Module):
 
         self.post_mp = self.post_mp.to(device)
         x = self.post_mp(x)
-        return F.log_softmax(x, dim=1)
+
+        return x
 
 class SAGEFam(nn.Module):
     '''abstract class for implementing GraphSAGE-* and GCN'''

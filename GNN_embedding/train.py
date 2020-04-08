@@ -56,16 +56,19 @@ def train(loaders, args, ind, it):
 
                 # Multi-task learning
                 if args.MTL:
-                    out = model.tasks[it](out)
+                    out = model.tasks[it](out)   # Last layer of NN that is specific to each task
+                    out = F.log_softmax(out, dim=1)  # Softmax
                     loss = criterion(out[batch.train_mask], batch.y[batch.train_mask], weight=weight)
                     loss_sum += loss.item()
 
                 # Single task learning
                 else:
+                    out = F.log_softmax(out, dim=1)
                     loss = criterion(out[batch.train_mask], batch.y[batch.train_mask], weight=weight)
                 loss.backward()
                 optimizer.step()
-                print('disease ', task_i,' loss on epoch', epoch, 'is', loss.item())
+                if epoch % 25 == 0:
+                    print('disease ', task_i,' loss on epoch', epoch, 'is', loss.item())
 
                 # Tensorboard writing and evaluate validation f1
                 if epoch % 50 == 0:
@@ -93,8 +96,9 @@ def train(loaders, args, ind, it):
 
         # Write the MTL loss to tensorboard
         if args.MTL:
-            print('Overall MTL loss on epoch', epoch, 'is', loss_sum)
-            writer.add_scalar('MTL/TrainLoss' + str(ind), loss_sum, it * epochs + epoch)
+            if epoch % 25 == 0:
+                print('Overall MTL loss on epoch', epoch, 'is', loss_sum)
+                writer.add_scalar('MTL/TrainLoss' + str(ind), loss_sum, it * epochs + epoch)
 
             # Use the sum of F1's over all the diseases to select a paricular multi task model
             if f1_sum > best_f1:
@@ -121,7 +125,7 @@ def trainer(args, num_folds=5):
     dir_ = './tensorboard_runs/'+args.expt_name
 
     # This returns all disease indices corresponding to given disease classes
-    sel_diseases = processed_data.get_disease_class_idx(['cancer'])[:2]
+    sel_diseases = processed_data.get_disease_class_idx(['cancer'])
     args.tasks = len(sel_diseases)
     processed_data.Y = processed_data.Y.iloc[:,sel_diseases]
 
@@ -227,7 +231,7 @@ if __name__ == '__main__':
     parser.add_argument('--hidden-dim', type=int, default=24)
     parser.add_argument('--out-dim', type=int, default=2)
     parser.add_argument('--num-heads', type=int, default=3)
-    parser.add_argument('--epochs', type=int, default=10)
+    parser.add_argument('--epochs', type=int, default=1000)
     parser.add_argument('--lr', type=float, default=0.0001)
     args = parser.parse_args()
 
