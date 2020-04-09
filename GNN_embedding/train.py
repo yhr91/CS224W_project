@@ -123,7 +123,10 @@ def trainer(args, num_folds=5):
     dir_ = './tensorboard_runs/'+args.expt_name
 
     # This returns all disease indices corresponding to given disease classes
-    sel_diseases = processed_data.get_disease_class_idx(['cancer'])
+    if args.sample_diseases:
+        sel_diseases = [469, 317, 473, 6, 426]
+    else:
+        sel_diseases = processed_data.get_disease_class_idx(['cancer'])
     args.tasks = len(sel_diseases)
     processed_data.Y = processed_data.Y.iloc[:,sel_diseases]
 
@@ -231,6 +234,7 @@ if __name__ == '__main__':
     parser.add_argument('--num-heads', type=int, default=3)
     parser.add_argument('--epochs', type=int, default=3000)
     parser.add_argument('--lr', type=float, default=0.0001)
+    parser.add_argument('--sample-diseases', type=bool, default=False)
     args = parser.parse_args()
 
     if not args.use_features and args.in_dim > 1:
