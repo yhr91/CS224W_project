@@ -95,6 +95,10 @@ def train(loaders, args, ind, edges=None):
                             print('loss on epoch', epoch, 'is', loss.item())
                             writer.flush()
 
+            # Clearing edge index out to save memory
+            loader.edge_index=[]
+
+
         # Write the MTL loss to tensorboard
         if args.MTL:
             if epoch % 50 == 0:
@@ -133,6 +137,8 @@ def trainer(args, num_folds=5):
     args.tasks = len(sel_diseases)
     processed_data.Y = processed_data.Y.iloc[:,sel_diseases]
 
+    
+    # If multi taske learning
     if args.MTL:
 
         # Preparing edges separately from the rest of the data
@@ -177,13 +183,19 @@ def trainer(args, num_folds=5):
         model.load_state_dict(best_model)
 
         for it, loader_all_folds in enumerate(data_generators):
+            loaders[it].edge_index=edges.t().contiguous()
+            loaders[it] = DataLoader([loaders[it]], batch_size=32)
             disease_test_scores[it] = utils.get_acc(model, loaders[it],
                                                     is_val=False, task=it)
+            # Remove entry from list
+            loaders[it]=[]
+
 
         # Save results
         np.save(dir_ + '/results', disease_test_scores)
 
 
+    # If single task learning
     else:
         for ind, column in enumerate(processed_data.Y):
             print(ind,column,'out of',len(processed_data.Y))
@@ -238,9 +250,9 @@ if __name__ == '__main__':
     parser.add_argument('--hidden-dim', type=int, default=24)
     parser.add_argument('--out-dim', type=int, default=2)
     parser.add_argument('--num-heads', type=int, default=3)
-    parser.add_argument('--epochs', type=int, default=200)
+    parser.add_argument('--epochs', type=int, default=2000)
     parser.add_argument('--lr', type=float, default=0.0001)
-    parser.add_argument('--sample-diseases', type=bool, default=True)
+    parser.add_argument('--sample-diseases', type=bool, default=False)
     args = parser.parse_args()
 
     if not args.use_features and args.in_dim > 1:
