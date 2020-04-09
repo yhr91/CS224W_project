@@ -121,7 +121,7 @@ class ProcessData:
 
     # TODO normalize features
     def load_uniprot_features(self):
-        df = pd.read_pickle("../Data/uniprot_ptm_features.pkl")
+        df = pd.read_pickle("./Protein_Features/uniprot_ptm_features.pkl")
         df = df.fillna(0)
         # Convert to binary features (rather than some features being counts)
         # print(df.columns)
@@ -133,10 +133,10 @@ class ProcessData:
         df = df.rename(index=self.conversions_dict)
         drop_set = set()
         for column in df.columns:
-            if column not in set(['Acetylation', 'Glycoprotein', 'Hydroxylation', 'Methylation',
-                                  'N6-succinyllysine', 'Non-Succinyl N6- Lysine Modification',
-                                  'Phosphoprotein', 'SUMO',
-                                  'Transmembrane Domain', 'Ubiquitin']):
+            if column not in set(['Acetylation', 'Glycoprotein', 'Hydroxylation',
+                                  'INTRAMEM', 'Methylation','N6-succinyllysine',
+                                  'N6-Lysine Modification, alternate','Neddylation',
+                                  'Phosphoprotein', 'Sumoylation', 'TRANSMEM', 'Ubiquitination']):
                 drop_set.add(column)
         for dropped in drop_set:
             df = df.drop(dropped, axis=1)
