@@ -12,9 +12,9 @@ import utils
 from torch.utils.tensorboard import SummaryWriter
 import copy
 import random
-import itertools
+from torch_geometric.data import DataLoader
 
-def train(loaders, args, ind, it):
+def train(loaders, args, ind, edges=None):
     if args.MTL==False:
         loaders = [loaders]
 
@@ -45,6 +45,9 @@ def train(loaders, args, ind, it):
 
         # If MLT, iterate over all diseases, if not then just single disease
         for task_i,loader in enumerate(loaders):
+            if edges is not None:
+                loader.edge_index = edges.t().contiguous()
+                loader = DataLoader([loader], batch_size=32)
 
             for batch in loader:
                 batch = batch.to(device)
@@ -132,11 +135,13 @@ def trainer(args, num_folds=5):
 
     if args.MTL:
 
+        # Preparing edges separately from the rest of the data
         edges = processed_data.get_edges()
         edges = torch.tensor(edges.values, dtype=torch.long)
-        data_generators = []
+        edges = utils.load_edges(edges)
 
         # Create a separate data generator for each task
+        data_generators = []
         for ind, column in enumerate(processed_data.Y):
             print(ind, column, 'out of', len(processed_data.Y))
 
@@ -145,8 +150,9 @@ def trainer(args, num_folds=5):
 
             # Set up train and test sets:
             test_size = .1
-            data_generators.append(utils.load_pyg(X, edges, y,
+            data_generators.append(utils.load_pyg(X=X, edges=None, y=y,
                                             folds=num_folds, test_size=test_size))
+            # Note: edges are being loaded separately to save memory
 
         # Iterate over folds
         models = []  # save models for now
@@ -158,7 +164,7 @@ def trainer(args, num_folds=5):
                 loaders.append(next(loader_all_folds))       #Pick the same fold for each disease
 
             # Use the list of training datasets for all diseases at a specifc fold to train
-            model, score = train(loaders, args, ind, it)
+            model, score = train(loaders, args, ind, edges=edges)
             models.append(model)
             model_scores.append(score)
 

@@ -49,6 +49,16 @@ def load_pyg_new(X, edges, y, folds=10, val_size=0.1):
         loader = DataLoader([data], batch_size=32)
         yield loader
 
+def load_edges(edges):
+    # Consider all edges and their reverse
+    edges = [e for e in edges.numpy() if e[0] != e[1]] # Remove self edges
+    reverse_edges = np.flip(np.array(edges),1)
+    edges = np.concatenate([edges,reverse_edges])
+    edges = np.unique(edges, axis=0) # Remove repeats
+    edges = torch.tensor(edges, dtype=torch.long)
+
+    return edges
+
 # This version of load pyg is designed to work with recall@100 metric
 # It does not require an even class split in the test set
 def load_pyg(X, edges, y, folds=5, test_size=0.1):
@@ -61,15 +71,11 @@ def load_pyg(X, edges, y, folds=5, test_size=0.1):
     # Now use the remainder of the data to create train and val sets
     kf = StratifiedKFold(n_splits=folds, random_state=2)
 
-    # Consider all edges and their reverse
-    edges = [e for e in edges.numpy() if e[0] != e[1]] # Remove self edges
-    reverse_edges = np.flip(np.array(edges),1)
-    edges = np.concatenate([edges,reverse_edges])
-    edges = np.unique(edges, axis=0) # Remove repeats
-    edges = torch.tensor(edges, dtype=torch.long)
+    if edges is not None:
+        edges = load_edges(edges)
 
     for train_idx, val_idx in kf.split(X, y):
-        data = Data(x=X, edge_index=edges.t().contiguous(), y=y)
+        data = Data(x=X, edge_index=edges, y=y)
 
         train_mask = [int(i in train_idx and i not in test_idx) for i in range(len(X))]
         val_mask = [int(i in val_idx and i not in test_idx) for i in range(len(y))]
@@ -79,7 +85,10 @@ def load_pyg(X, edges, y, folds=5, test_size=0.1):
         data.val_mask = torch.tensor(val_mask, dtype=torch.bool)
         data.test_mask = torch.tensor(test_mask, dtype=torch.bool)
 
-        loader = DataLoader([data], batch_size=32) # shuffling done at train time
+        if edges is None:
+            loader = data
+        else:
+            loader = DataLoader([data], batch_size=32) # shuffling done at train time
         yield loader
 
 
