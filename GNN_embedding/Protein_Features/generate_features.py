@@ -35,8 +35,7 @@ class UniProt:
     def create_ptm_keyword_dict(self):
         output_dict = dict()
         for record in ptm_keyword_parser.parse(
-            open("/Users/benjaminangulo/Documents/Stanford2019/CS224W/CS224W_project/GNN_embedding"
-            "/Protein_Features/ptmlist_04_08_20.txt", "r")):
+            open("./ptmlist_04_08_20.txt", "r")):
             if record.get("KW", None) is None:
                 # print(record)
                 self.no_keywords.add(record["ID"])
@@ -52,10 +51,7 @@ class UniProt:
         :return: A
         """
         for record in sp.parse(gzip.open(
-                "/Users/benjaminangulo/Documents/Stanford2019/CS224W"
-                                 "/CS224W_project"
-                   "/GNN_embedding"
-               "/Protein_Features/human_uniprot_04_07_20.gz", 'rt')):
+                "./human_uniprot_04_07_20.gz", 'rt')):
             # print(record.taxonomy_id)
             # if record.organism != "Homo sapiens":
             #     continue
@@ -78,6 +74,8 @@ class UniProt:
                 # print(feature)
                 modification = feature.qualifiers["note"].split(";")[0].rstrip(".")
                 key_word_mod = self.ptm_keyword_dict.get(modification, modification)
+                if key_word_mod.startswith("N6-") and not key_word_mod.startswith("N6-succinyl"):
+                    key_word_mod = "N6-Lysine Modification, alternate"
                 self.ptm_set.add(key_word_mod)
                 features[key_word_mod] += 1
 

@@ -228,7 +228,7 @@ if __name__ == '__main__':
     parser.add_argument('--expt_name', type=str, default=dt)
     parser.add_argument('--use-features', type=bool, nargs='?', const=True, default=True)
     parser.add_argument('--MTL', type=bool, default=True)
-    parser.add_argument('--in-dim', type=int, default=11)
+    parser.add_argument('--in-dim', type=int, default=13)
     parser.add_argument('--hidden-dim', type=int, default=24)
     parser.add_argument('--out-dim', type=int, default=2)
     parser.add_argument('--num-heads', type=int, default=3)
