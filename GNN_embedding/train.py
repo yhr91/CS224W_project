@@ -65,7 +65,7 @@ def train(loaders, args, ind, it):
                     loss = criterion(out[batch.train_mask], batch.y[batch.train_mask], weight=weight)
                 loss.backward()
                 optimizer.step()
-                if epoch % 25 == 0:
+                if epoch % 50 == 0:
                     print('disease ', task_i,' loss on epoch', epoch, 'is', loss.item())
 
                 # Tensorboard writing and evaluate validation f1
@@ -94,7 +94,7 @@ def train(loaders, args, ind, it):
 
         # Write the MTL loss to tensorboard
         if args.MTL:
-            if epoch % 25 == 0:
+            if epoch % 50 == 0:
                 print('Overall MTL loss on epoch', epoch, 'is', loss_sum)
                 writer.add_scalar('MTL/TrainLoss' + str(ind), loss_sum, it * epochs + epoch)
 
@@ -232,9 +232,9 @@ if __name__ == '__main__':
     parser.add_argument('--hidden-dim', type=int, default=24)
     parser.add_argument('--out-dim', type=int, default=2)
     parser.add_argument('--num-heads', type=int, default=3)
-    parser.add_argument('--epochs', type=int, default=3000)
+    parser.add_argument('--epochs', type=int, default=200)
     parser.add_argument('--lr', type=float, default=0.0001)
-    parser.add_argument('--sample-diseases', type=bool, default=False)
+    parser.add_argument('--sample-diseases', type=bool, default=True)
     args = parser.parse_args()
 
     if not args.use_features and args.in_dim > 1:
