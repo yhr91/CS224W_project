@@ -86,6 +86,7 @@ def load_pyg(X, edges, y, folds=5, test_size=0.1):
         data.test_mask = torch.tensor(test_mask, dtype=torch.bool)
 
         if edges is None:
+            # If doing MTL, call DataLoader in the train() function with edges
             loader = data
         else:
             loader = DataLoader([data], batch_size=32) # shuffling done at train time
