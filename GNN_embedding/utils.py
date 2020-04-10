@@ -73,6 +73,7 @@ def load_pyg(X, edges, y, folds=5, test_size=0.1):
 
     if edges is not None:
         edges = load_edges(edges)
+        edges = edges.t().contiguous()
 
     for train_idx, val_idx in kf.split(X, y):
         data = Data(x=X, edge_index=edges, y=y)
