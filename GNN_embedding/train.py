@@ -133,7 +133,7 @@ def trainer(args, num_folds=5):
     if args.sample_diseases:
         sel_diseases = [469, 317, 473, 6, 426]
     else:
-        sel_diseases = processed_data.get_disease_class_idx(['cancer'])
+        sel_diseases = processed_data.get_disease_class_idx(['cancer'])[:38]
     args.tasks = len(sel_diseases)
     processed_data.Y = processed_data.Y.iloc[:,sel_diseases]
 
