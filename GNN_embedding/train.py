@@ -19,13 +19,8 @@ def train(data, tasks, args, ind, fold_num, step=50):
     data is a Data object
     tasks is a list of ((train, val, test), label) tuples
     '''
-    if args.use_features:
-        feat_str = 'feats'
-    else:
-        feat_str = 'no_feats'
-
-    writer = SummaryWriter('./tensorboard_runs/'+args.expt_name+'/'
-                           +args.network_type+'_'+args.dataset+'_'+feat_str)
+    # Set up tensorboard writer
+    writer = SummaryWriter(args.dir_)
 
     # retrieve the requested NN model + push to device
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -107,6 +102,14 @@ def trainer(args, num_folds=10):
         'Decagon_GNBR': '../dataset_collection/Decagon_GNBR.csv'
     }[args.dataset]
 
+    if args.use_features:
+        feat_str = 'feats'
+    else:
+        feat_str = 'no_feats'
+
+    args.dir_ = './tensorboard_runs/'+args.expt_name+'/'+\
+                args.network_type+'_'+args.dataset+'_'+feat_str
+
     # load graph
     processed_data = ProcessData(edgelist_file, use_features=args.use_features)
     X = processed_data.X
@@ -123,7 +126,6 @@ def trainer(args, num_folds=10):
     processed_data.Y = processed_data.Y.iloc[:,sel_diseases]
 
     disease_test_scores = defaultdict(list)
-    dir_ = './tensorboard_runs/'+args.expt_name
     
     # If multi task learning
     if args.MTL:
@@ -167,7 +169,7 @@ def trainer(args, num_folds=10):
             disease_test_scores[ind] = [test_score]
 
     # Save results
-    np.save(dir_+'/results', disease_test_scores)
+    np.save(args.dir_+'/results', disease_test_scores)
 
 if __name__ == '__main__':
     import argparse
