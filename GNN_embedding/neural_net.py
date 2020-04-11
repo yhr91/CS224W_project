@@ -104,9 +104,9 @@ class sage_gcn(Neural_Base):
         device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         
         # add self loops to edge_index
-        self_loops = torch.stack((torch.arange(num_nodes), torch.arange(num_nodes)))
-        edge_index = torch.cat((edge_index, self_loops), dim=1)
+        self_loops = torch.stack((torch.arange(num_nodes), torch.arange(num_nodes))).to(device)
         edge_index = edge_index.to(device)
+        edge_index = torch.cat((edge_index, self_loops), dim=1)
 
         # divide adjacency matrix by node degree to obtain the mean
         # according to the GraphSAGE paper: https://arxiv.org/abs/1706.02216
@@ -126,9 +126,9 @@ class gcn(Neural_Base):
         device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         
         # add self loops to edge_index
-        self_loops = torch.stack((torch.arange(num_nodes), torch.arange(num_nodes)))
-        edge_index = torch.cat((edge_index, self_loops), dim=1)
+        self_loops = torch.stack((torch.arange(num_nodes), torch.arange(num_nodes))).to(device)
         edge_index = edge_index.to(device)
+        edge_index = torch.cat((edge_index, self_loops), dim=1)
 
         # scaling according to original GCN paper: arxiv.org/abs/1609.02907
         vals = torch.ones(edge_index.shape[1], device=device)
