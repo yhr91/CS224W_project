@@ -56,11 +56,13 @@ def train(data, tasks, args, ind, fold_num, step=50):
 
             out = F.log_softmax(out, dim=1) # Softmax
             loss = criterion(out[train_mask], y[train_mask], weight=weight)
-            res = utils.get_acc(model, data, val_mask, y, task=idx)
 
             if args.MTL:
+                res = utils.get_acc(model, data, val_mask, y, task=idx)
                 loss_sum += loss.item()
                 f1_sum += res['f1']
+            else:
+                res = utils.get_acc(model, data, val_mask, y, task=None)
 
             loss.backward()
             optimizer.step()
@@ -176,12 +178,12 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', type=str, choices=['Decagon', 'GNBR', 'Decagon_GNBR'], default='GNBR')
     parser.add_argument('--expt_name', type=str, default=dt)
     parser.add_argument('--use-features', type=bool, nargs='?', const=True, default=True)
-    parser.add_argument('--MTL', type=bool, default=True)
+    parser.add_argument('--MTL', type=bool, default=False)
     parser.add_argument('--in-dim', type=int, default=13)
     parser.add_argument('--hidden-dim', type=int, default=24)
     parser.add_argument('--out-dim', type=int, default=2)
     parser.add_argument('--num-heads', type=int, default=1)
-    parser.add_argument('--epochs', type=int, default=2000)
+    parser.add_argument('--epochs', type=int, default=100)
     parser.add_argument('--lr', type=float, default=0.0001)
     parser.add_argument('--sample-diseases', type=bool, default=False)
     args = parser.parse_args()
