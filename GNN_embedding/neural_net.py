@@ -57,7 +57,7 @@ class Neural_Base(nn.Module):
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
 
-        if self.use_adj and self.adj_mat is None:
+        if self.use_adj and not hasattr(self, 'adj_mat'):
             self.convert_to_adj(edge_index, len(x))
 
         arg = self.adj_mat if self.use_adj else edge_index
