@@ -9,6 +9,34 @@ from torch_scatter import scatter
 from models import encoders, decoders
 from layers import layers
 
+class gcn_layer(nn.Module):
+    def __init__(self, in_features, out_features):
+        super(gcn_layer, self).__init__()
+        self.linear = nn.Linear(in_features, out_features)
+
+    def forward(self, x, adj):
+        hidden = self.linear(x)
+        if adj.is_sparse:
+            hidden = torch.sparse.mm(adj, hidden)
+        else:
+            hidden = torch.mm(adj, hidden)
+        return hidden
+
+class sage_layer(nn.Module):
+    def __init__(self, in_features, out_features):
+        super(GraphSAGEConvolution, self).__init__()
+        self.linear = nn.Linear(in_features * 2, out_features)
+
+    def forward(self, x, adj):
+        '''sum the neighbors and then concat'''
+        if adj.is_sparse:
+            support = torch.sparse.mm(adj, x)
+        else:
+            support = torch.mm(adj, x)
+        x = torch.cat((x, support), dim=1)
+        hidden = self.linear(x)
+        return hidden
+
 class SAGEConv(pyg_nn.MessagePassing):
     def __init__(self, in_channels, out_channels, normalize=True, aggr='mean',
             concat=True, transform_mess=False, nonlin=F.relu):
@@ -138,4 +166,3 @@ class HGCNConv(nn.Module):
         h = self.encoder.encode(x, self.adj_mat)
         output = self.decoder.decode(h, self.adj_mat)
         return F.log_softmax(output, dim=1)
-
