@@ -112,7 +112,6 @@ def trainer(args, num_folds=10):
         sel_diseases = [469, 317, 473, 6, 426]
     else:
         sel_diseases = processed_data.get_disease_class_idx(['cancer'])[:38]
-    args.tasks = len(sel_diseases)
     processed_data.Y = processed_data.Y.iloc[:,sel_diseases]
 
     disease_test_scores = defaultdict(list)
@@ -120,6 +119,7 @@ def trainer(args, num_folds=10):
     
     # If multi task learning
     if args.MTL:
+        args.tasks = len(sel_diseases)
         # Load masks and labels for each task
         masks_and_labels = []
         for ind, col in enumerate(processed_data.Y):
@@ -143,6 +143,7 @@ def trainer(args, num_folds=10):
 
     # If single task learning
     else:
+        args.tasks = 1
         for ind, column in enumerate(processed_data.Y):
             print(ind,column,'out of',len(processed_data.Y))
 
