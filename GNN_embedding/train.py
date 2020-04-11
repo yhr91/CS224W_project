@@ -67,7 +67,10 @@ def train(data, tasks, args, ind, fold_num, step=50):
                 writer.add_scalar('TrainLoss/disease_'+str(ind), loss.item(), fold_num * epochs + epoch)
                 writer.add_scalar('ValF1/disease_'+str(ind), res['f1'], fold_num * epochs + epoch)
                 writer.add_scalar('ValRecall/disease_' + str(ind), res['recall'], fold_num * epochs + epoch)
-                print('disease ', idx,' loss on epoch', epoch, 'is', loss.item())
+                if args.MTL:
+                    print('disease ', idx,' loss on epoch', epoch, 'is', loss.item())
+                else:
+                    print('disease ', ind,' loss on epoch', epoch, 'is', loss.item())
 
         # Every epoch, test if best model, then save
         if args.MTL:
@@ -88,7 +91,8 @@ def train(data, tasks, args, ind, fold_num, step=50):
                 print('Overall MTL loss on epoch', epoch, 'is', loss_sum)
                 writer.add_scalar('MTL/TrainLoss' + str(ind), loss_sum, fold_num * epochs + epoch)
             else:
-                res = utils.get_acc(model, data, val_mask, y, task=None)
+                pass
+                # res = utils.get_acc(model, data, val_mask, y, task=None)
 
     writer.flush()
     writer.close()
@@ -164,9 +168,9 @@ def trainer(args, num_folds=10):
                 task = [(masks[f], y)]
                 model, score = train(data, task, args, ind, f)
 
-            test_score = utils.get_acc(model, data, masks[f], y, is_val=False)
-            print('Best model f1:', test_score)
-            disease_test_scores[ind] = [test_score]
+                test_score = utils.get_acc(model, data, masks[f][2], y)
+                print('Best model f1:', test_score)
+                disease_test_scores[ind].append(test_score)
 
     # Save results
     np.save(args.dir_+'/results', disease_test_scores)
