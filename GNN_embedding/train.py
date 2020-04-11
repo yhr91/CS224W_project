@@ -14,7 +14,7 @@ import copy
 import random
 from collections import defaultdict
 
-def train(data, tasks, args, ind, fold_num):
+def train(data, tasks, args, ind, fold_num, step=50):
     '''
     data is a Data object
     tasks is a list of ((train, val, test), label) tuples
@@ -56,36 +56,42 @@ def train(data, tasks, args, ind, fold_num):
 
             out = F.log_softmax(out, dim=1) # Softmax
             loss = criterion(out[train_mask], y[train_mask], weight=weight)
+            res = utils.get_acc(model, data, val_mask, y, task=idx)
 
             if args.MTL:
                 loss_sum += loss.item()
+                f1_sum += res['f1']
 
             loss.backward()
             optimizer.step()
-            if epoch % 50 == 0:
-                print('disease ', idx,' loss on epoch', epoch, 'is', loss.item())
-                # Tensorboard writing and evaluate validation f1
-                if args.MTL:
-                    res = utils.get_acc(model, data, val_mask, y, task=idx)
-                    f1_sum += res['f1']
-                    print('Overall MTL loss on epoch', epoch, 'is', loss_sum)
-                    writer.add_scalar('MTL/TrainLoss' + str(ind), loss_sum, fold_num * epochs + epoch)
-                else:
-                    res = utils.get_acc(model, data, val_mask, y, task=None)
+
+            # once per 'step' epoch tensorboard writing, at the 'disease' level
+            if epoch % step == 0:
                 writer.add_scalar('TrainLoss/disease_'+str(ind), loss.item(), fold_num * epochs + epoch)
                 writer.add_scalar('ValF1/disease_'+str(ind), res['f1'], fold_num * epochs + epoch)
                 writer.add_scalar('ValRecall/disease_' + str(ind), res['recall'], fold_num * epochs + epoch)
+                print('disease ', idx,' loss on epoch', epoch, 'is', loss.item())
 
+        # Every epoch, test if best model, then save
+        if args.MTL:
+            # Use the sum of F1's over all the diseases to select a paricular multi task model
+            if f1_sum > best_f1:
+                model_save = copy.deepcopy(model.state_dict())
+                best_f1 = f1_sum
+
+        else:
+            # Model selection
+            if res['f1'] > best_f1:
+                model_save = copy.deepcopy(model.state_dict())
+                best_f1 = res['f1']
+
+        # Once per 'step' epoch tensorboard writing, at the epoch level
+        if epoch % step == 0:
             if args.MTL:
-                # Use the sum of F1's over all the diseases to select a paricular multi task model
-                if f1_sum > best_f1:
-                    model_save = copy.deepcopy(model.state_dict())
-                    best_f1 = f1_sum
+                print('Overall MTL loss on epoch', epoch, 'is', loss_sum)
+                writer.add_scalar('MTL/TrainLoss' + str(ind), loss_sum, fold_num * epochs + epoch)
             else:
-                # Model selection
-                if res['f1'] > best_f1:
-                    model_save = copy.deepcopy(model.state_dict())
-                    best_f1 = res['f1']
+                res = utils.get_acc(model, data, val_mask, y, task=None)
 
     writer.flush()
     writer.close()
@@ -111,7 +117,7 @@ def trainer(args, num_folds=10):
     if args.sample_diseases: # for hyperparameter tuning
         sel_diseases = [469, 317, 473, 6, 426]
     else:
-        sel_diseases = processed_data.get_disease_class_idx(['cancer'])[:38]
+        sel_diseases = processed_data.get_disease_class_idx(['cancer'])
     processed_data.Y = processed_data.Y.iloc[:,sel_diseases]
 
     disease_test_scores = defaultdict(list)
