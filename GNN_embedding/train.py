@@ -153,7 +153,9 @@ def trainer(args, num_folds=10):
 
             # compute accuracy
             for ind, (masks, label) in enumerate(masks_and_labels):
-                disease_test_scores[ind].append(utils.get_acc(model, data, masks[f][2], label))
+                test_score = utils.get_acc(model, data, masks[f][2], label, task=ind)
+                print('On fold', f, 'and disease', ind, 'score is', test_score)
+                disease_test_scores[ind].append(test_score)
 
     # If single task learning
     else:
@@ -168,8 +170,8 @@ def trainer(args, num_folds=10):
                 task = [(masks[f], y)]
                 model, score = train(data, task, args, ind, f)
 
-                test_score = utils.get_acc(model, data, masks[f][2], y)
-                print('Best model f1:', test_score)
+                test_score = utils.get_acc(model, data, masks[f][2], y, task=None)
+                print('On fold', f, 'and disease', ind, 'score is', test_score)
                 disease_test_scores[ind].append(test_score)
 
     # Save results
