@@ -65,6 +65,7 @@ def get_acc(model, data, mask, label, is_val=False, k=100, task=None):
     model.eval()
     model = model.to(device)
     data = data.to(device)
+    mask,label = mask.to(device),label.to(device)
     with torch.no_grad():
         output = model(data)
         if task is not None:

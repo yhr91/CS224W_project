@@ -45,6 +45,7 @@ def train(data, tasks, args, ind, fold_num):
 
         # If MTL, iterate over all diseases, if not then just single disease
         for idx, ((train_mask, val_mask, _), y) in enumerate(tasks):
+            train_mask, val_mask, y = train_mask.to(device), val_mask.to(device), y.to(device)
             optimizer.zero_grad()
             out = model(data)
             weight = utils.get_weight(y, device=device)
