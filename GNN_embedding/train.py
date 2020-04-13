@@ -33,13 +33,17 @@ def train(data, tasks, args, ind, fold_num, step=50):
     model_save = copy.deepcopy(model.state_dict())
 
     epochs = args.epochs
+    tasks_ = list(enumerate(tasks))
     for epoch in range(epochs):
         model.train()
         loss_sum = 0
         f1_sum = 0
+        if args.shuffle:
+            tasks_ = tasks_.copy()
+            np.random.shuffle(tasks_)
 
         # If MTL, iterate over all diseases, if not then just single disease
-        for idx, ((train_mask, val_mask, _), y) in enumerate(tasks):
+        for idx, ((train_mask, val_mask, _), y) in tasks_:
             train_mask, val_mask, y = train_mask.to(device), val_mask.to(device), y.to(device)
             optimizer.zero_grad()
             out = model(data)
@@ -193,6 +197,7 @@ if __name__ == '__main__':
     parser.add_argument('--num-heads', type=int, default=1)
     parser.add_argument('--epochs', type=int, default=100)
     parser.add_argument('--lr', type=float, default=0.0001)
+    parser.add_argument('--shuffle', type=bool, default=True)
     parser.add_argument('--sample-diseases', type=bool, default=False)
     args = parser.parse_args()
 
