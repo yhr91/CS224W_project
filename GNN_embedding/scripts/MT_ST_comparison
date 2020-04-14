@@ -1,3 +1,3 @@
 #!/bin/bash
-time python3 train.py --network-type GEO_GCN --dataset Decagon --use-features --MTL False --epochs 1000 --score loss_sum --sample-diseases True --hidden-dim 36 --shuffle True --expt_name MT_ST_compare_ST
-time python3 train.py --network-type GEO_GCN --dataset Decagon --use-features --MTL True --epochs 1000 --score loss_sum --sample-diseases True --hidden-dim 36 --shuffle True --expt_name MT_ST_compare_MT
+python3 train.py --network-type GEO_GCN --dataset Decagon --use-features --MTL False --epochs 1000 --score loss_sum --sample-diseases True --hidden-dim 36 --shuffle True --expt_name MT_ST_compare_ST
+python3 train.py --network-type GEO_GCN --dataset Decagon --use-features --MTL True --epochs 1000 --score loss_sum --sample-diseases True --hidden-dim 36 --shuffle True --expt_name MT_ST_compare_MT
