@@ -42,7 +42,7 @@ def train(data, tasks, args, ind, fold_num, step=50):
         if args.score.split('_')[1] == 'sum':
             epoch_score = 0
         elif args.score.split('_')[1] == 'max':
-            epoch_score = -np.inf
+            epoch_score = np.inf
 
         if args.shuffle:
             tasks_ = tasks_.copy()
@@ -77,7 +77,7 @@ def train(data, tasks, args, ind, fold_num, step=50):
             if args.score.split('_')[1] == 'sum':
                 epoch_score += task_score
             elif args.score.split('_')[1] == 'max':
-                epoch_score = max(epoch_score, task_score)
+                epoch_score = min(epoch_score, task_score)
 
             loss.backward()
             optimizer.step()
@@ -203,10 +203,10 @@ if __name__ == '__main__':
     parser.add_argument('--hidden-dim', type=int, default=24)
     parser.add_argument('--out-dim', type=int, default=2)
     parser.add_argument('--num-heads', type=int, default=1)
-    parser.add_argument('--epochs', type=int, default=100)
-    parser.add_argument('--lr', type=float, default=0.0001)
+    parser.add_argument('--epochs', type=int, default=2000)
+    parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--shuffle', type=bool, default=True)
-    parser.add_argument('--score', type=str, default='f1_max')
+    parser.add_argument('--score', type=str, default='f1_sum')
     parser.add_argument('--sample-diseases', type=bool, default=True)
     args = parser.parse_args()
 
