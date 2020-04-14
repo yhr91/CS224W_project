@@ -49,7 +49,7 @@ def insert_edges(edges):
     edges = edges.type(torch.long)
     return edges
 
-def load_graph(X, edges, y=None):
+def load_graph(X, edges, y=None): 
     '''
     Wrap data in a Data object for pyg
     Expects X to be a tensor of shape [N, feats]

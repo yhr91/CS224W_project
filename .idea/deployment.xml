@@ -7,6 +7,9 @@
           <mappings>
             <mapping deploy="/home/Yusuf/CS224W_project" local="$PROJECT_DIR$" />
           </mappings>
+          <excludedPaths>
+            <excludedPath local="true" path="$PROJECT_DIR$/GNN_embedding/tensorboard_runs" />
+          </excludedPaths>
         </serverdata>
       </paths>
       <paths name="Yusuf@34.91.19.147:22">
@@ -59,13 +62,6 @@
         </serverdata>
       </paths>
       <paths name="Yusuf@35.247.70.81:22 (3)">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/home/Yusuf/CS224W_project" local="$PROJECT_DIR$" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="Yusuf@35.247.70.81:22 (4)">
         <serverdata>
           <mappings>
             <mapping deploy="/home/Yusuf/CS224W_project" local="$PROJECT_DIR$" />

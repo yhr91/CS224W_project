@@ -13,6 +13,7 @@ from torch.utils.tensorboard import SummaryWriter
 import copy
 import random
 from collections import defaultdict
+import time
 
 def train(data, tasks, args, ind, fold_num, step=50):
     '''
@@ -112,6 +113,7 @@ def train(data, tasks, args, ind, fold_num, step=50):
     return model, best_score
 
 def trainer(args, num_folds=10):
+    start = time.time()
     edgelist_file = {
         'Decagon': '../dataset_collection/PP-Decagon_ppi.csv',
         'GNBR': '../dataset_collection/GNBR-edgelist.csv',
@@ -198,7 +200,10 @@ def trainer(args, num_folds=10):
                 disease_test_scores[ind].append(test_score)
 
     # Save results
+    end = time.time()
+    time_taken = end - start
     np.save(args.dir_+'/results', disease_test_scores)
+    np.save(args.dir_+'/time',time_taken)
 
 if __name__ == '__main__':
     import argparse
@@ -209,7 +214,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', type=str, choices=['Decagon', 'GNBR', 'Decagon_GNBR'], default='GNBR')
     parser.add_argument('--expt_name', type=str, default=dt)
     parser.add_argument('--use-features', type=bool, nargs='?', const=True, default=True)
-    parser.add_argument('--MTL', type=bool, default=True)
+    parser.add_argument('--MTL', type=bool, default=False)
     parser.add_argument('--in-dim', type=int, default=13)
     parser.add_argument('--hidden-dim', type=int, default=24)
     parser.add_argument('--out-dim', type=int, default=2)
