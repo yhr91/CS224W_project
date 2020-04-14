@@ -16,6 +16,7 @@ def get_neural_network(args):
         'SAGE_GCN': sage_gcn,
         'GCN': gcn,
         'GEO_GAT': geo_gat,
+        'ADA_GCN': ada_gcn
     }[args.network_type]
     use_adj = 'GEO' not in args.network_type
     model = model(args.in_dim, args.hidden_dim, args.out_dim, use_adj=use_adj,
@@ -139,3 +140,39 @@ class gcn(Neural_Base):
 
         adj_mat = torch.sparse.FloatTensor(edge_index, vals, (num_nodes, num_nodes)).to(device)
         self.adj_mat = adj_mat
+
+class ada_gcn(Neural_Base):
+    def get_conv(self, in_dim, out_dim):
+        return conv_layers.ada_conv_layer(in_dim, out_dim)
+
+    def convert_to_adj(self, edge_indexes, num_nodes):
+        assert len(edge_indexes) == 2, 'need separate edge indices'
+        edge1, edge2 = edge_indexes
+        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        
+        # add self loops to edge_index
+        self_loops = torch.stack((torch.arange(num_nodes), torch.arange(num_nodes))).to(device)
+        edge1 = edge1.to(device)
+        edge1 = torch.cat((edge1, self_loops), dim=1)
+
+        # divide adjacency matrix by node degree to obtain the mean
+        # according to the GraphSAGE paper: https://arxiv.org/abs/1706.02216
+        vals = torch.ones(edge1.shape[1], device=device)
+        degs = scatter(vals, edge1[0], dim=0, dim_size=num_nodes, reduce='sum')
+        vals = vals / degs[edge1[0]] # divide by node degree
+
+        adj_mat1 = torch.sparse.FloatTensor(edge1, vals, (num_nodes, num_nodes)).to(device)
+
+        # add self loops to edge_index
+        self_loops = torch.stack((torch.arange(num_nodes), torch.arange(num_nodes))).to(device)
+        edge2 = edge2.to(device)
+        edge2 = torch.cat((edge2, self_loops), dim=1)
+
+        # divide adjacency matrix by node degree to obtain the mean
+        # according to the GraphSAGE paper: https://arxiv.org/abs/1706.02216
+        vals = torch.ones(edge2.shape[1], device=device)
+        degs = scatter(vals, edge2[0], dim=0, dim_size=num_nodes, reduce='sum')
+        vals = vals / degs[edge2[0]] # divide by node degree
+
+        adj_mat2 = torch.sparse.FloatTensor(edge2, vals, (num_nodes, num_nodes)).to(device)
+        self.adj_mat = (adj_mat1, adj_mat2)

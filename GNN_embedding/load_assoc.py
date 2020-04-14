@@ -94,8 +94,10 @@ class ProcessData:
                 1]])) > 0:
                 print(pair[0]+" overlaps with "+pair[1])
 
-    def get_edges(self):
-        edgelist = pd.read_csv(self.edgelist_file, header=None)
+    def get_edges(self, edgelist_file=None):
+        if edgelist_file is None:
+            edgelist_file = self.edgelist_file
+        edgelist = pd.read_csv(edgelist_file, header=None)
 
         # Remove edges for which we don't have entrez
         idx = np.logical_and(edgelist[0].isin(self.X.index.values),
