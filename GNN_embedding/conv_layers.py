@@ -24,7 +24,7 @@ class gcn_layer(nn.Module):
 
 class sage_layer(nn.Module):
     def __init__(self, in_features, out_features):
-        super(GraphSAGEConvolution, self).__init__()
+        super(sage_layer, self).__init__()
         self.linear = nn.Linear(in_features * 2, out_features)
 
     def forward(self, x, adj):
@@ -36,6 +36,26 @@ class sage_layer(nn.Module):
         x = torch.cat((x, support), dim=1)
         hidden = self.linear(x)
         return hidden
+
+class ada_conv_layer(nn.Module):
+    def __init__(self, in_features, out_features):
+        super(ada_conv_layer, self).__init__()
+        self.lin1 = nn.Linear(in_features, out_features)
+        self.lin2 = nn.Linear(in_features, out_features)
+
+    def forward(self, x, adjs):
+        adj1, adj2 = adjs
+        hidden1 = self.lin1(x)
+        hidden2 = self.lin2(x)
+        if adj1.is_sparse:
+            hidden1 = torch.sparse.mm(adj1, hidden1)
+        else:
+            hidden1 = torch.mm(adj1, hidden1)
+        if adj2.is_sparse:
+            hidden2 = torch.sparse.mm(adj2, hidden2)
+        else:
+            hidden2 = torch.mm(adj2, hidden2)
+        return hidden1 + hidden2
 
 class SAGEConv(pyg_nn.MessagePassing):
     def __init__(self, in_channels, out_channels, normalize=True, aggr='mean',

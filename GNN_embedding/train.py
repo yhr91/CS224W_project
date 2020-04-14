@@ -118,13 +118,18 @@ def trainer(args, num_folds=10):
         'Decagon_GNBR': '../dataset_collection/Decagon_GNBR.csv'
     }[args.dataset]
 
+    if args.heterogeneous:
+        edgelist_file = '../dataset_collection/PP-Decagon_ppi.csv'
+        edgelist_file2 = '../dataset_collection/GNBR-edgelist.csv'
+    het_str = 'heterogeneous' * args.heterogeneous
+
     if args.use_features:
         feat_str = 'feats'
     else:
         feat_str = 'no_feats'
 
     args.dir_ = './tensorboard_runs/'+args.expt_name+'/'+\
-                args.network_type+'_'+args.dataset+'_'+feat_str
+                args.network_type+'_'+args.dataset+'_'+feat_str+'_'+het_str
 
     # load graph
     processed_data = ProcessData(edgelist_file, use_features=args.use_features)
@@ -133,6 +138,12 @@ def trainer(args, num_folds=10):
     edges = processed_data.get_edges()
     edges = torch.tensor(edges.values, dtype=torch.long)
     data = utils.load_graph(X, edges)
+
+    if args.heterogeneous:
+        edges2 = processed_data.get_edges(edgelist_file=edgelist_file2)
+        edges2 = torch.tensor(edges2.values, dtype=torch.long)
+        edges2 = utils.insert_edges(edges2)
+        data.edge_index = (data.edge_index, edges2.t().contiguous())
 
     # load labels: returns all disease indices corresponding to given disease classes
     if args.sample_diseases: # for hyperparameter tuning
@@ -194,7 +205,7 @@ if __name__ == '__main__':
     dt = str(datetime.now())[5:19].replace(' ', '_').replace(':', '-')
     
     parser = argparse.ArgumentParser(description='Define network type and dataset.')
-    parser.add_argument('--network-type', type=str, choices=['GEO_GCN', 'SAGE', 'SAGE_GCN', 'GCN', 'GEO_GAT'], default='GEO_GCN')
+    parser.add_argument('--network-type', type=str, choices=['GEO_GCN', 'SAGE', 'SAGE_GCN', 'GCN', 'GEO_GAT', 'ADA_GCN'], default='GEO_GCN')
     parser.add_argument('--dataset', type=str, choices=['Decagon', 'GNBR', 'Decagon_GNBR'], default='GNBR')
     parser.add_argument('--expt_name', type=str, default=dt)
     parser.add_argument('--use-features', type=bool, nargs='?', const=True, default=True)
@@ -208,6 +219,7 @@ if __name__ == '__main__':
     parser.add_argument('--shuffle', type=bool, default=True)
     parser.add_argument('--score', type=str, default='f1_max')
     parser.add_argument('--sample-diseases', type=bool, default=True)
+    parser.add_argument('--heterogeneous', type=bool, nargs='?', const=True, default=False)
     args = parser.parse_args()
 
     if not args.use_features and args.in_dim > 1:
