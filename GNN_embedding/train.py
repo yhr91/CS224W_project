@@ -224,12 +224,14 @@ if __name__ == '__main__':
     parser.add_argument('--shuffle', type=bool, nargs ='?', const=True, default=False)
     parser.add_argument('--score', type=str, default='f1_sum')
     parser.add_argument('--sample-diseases', type=bool, nargs='?', const=True, default=False)
-    parser.add_argument('--heterogeneous', type=bool, nargs='?', const=True, default=False)
+    # parser.add_argument('--heterogeneous', type=bool, nargs='?', const=True, default=False)
     args = parser.parse_args()
 
     if not args.use_features and args.in_dim > 1:
         print('Cannot have in dim of', args.in_dim, 'changing to 1.')
         args.in_dim = 1
+    
+    args.heterogeneous = args.network_type == 'ADA_GCN'
 
     def seed_torch(seed=1029):
         random.seed(seed)
