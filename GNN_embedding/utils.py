@@ -68,8 +68,11 @@ def get_acc(model, data, mask, label, is_val=False, k=100, task=None):
     mask,label = mask.to(device),label.to(device)
     with torch.no_grad():
         output = model(data)
+        embedding = output.cpu().numpy()
         if task is not None:
             output = model.tasks[task](output)
+        else:
+            output = model.final(output)
         prob = output[:,1]
         pred = output.max(dim=1)[1]
 
@@ -84,7 +87,7 @@ def get_acc(model, data, mask, label, is_val=False, k=100, task=None):
     res['f1'] = f1_score(label,preds)
     correct = np.sum(label[np.argsort(probs)[-k:]])
     res['recall'] = correct/np.sum(label)
-    return res
+    return res, embedding
 
 # Weighs the loss function
 def get_weight(x_, device):

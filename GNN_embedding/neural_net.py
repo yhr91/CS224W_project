@@ -16,29 +16,37 @@ def get_neural_network(args):
         'SAGE_GCN': sage_gcn,
         'GCN': gcn,
         'GEO_GAT': geo_gat,
-        'ADA_GCN': ada_gcn
-    }[args.network_type]
+        'ADA_GCN': ada_gcn,
+        'NO_GNN':geo_gcn}[args.network_type]
     use_adj = 'GEO' not in args.network_type
+    no_gnn = 'NO_GNN' in args.network_type
     model = model(args.in_dim, args.hidden_dim, args.out_dim, use_adj=use_adj,
-        tasks=args.tasks)
+        tasks=args.tasks, no_gnn=no_gnn)
     return model
 
 class Neural_Base(nn.Module):
     '''Abstract class for general neural networking architecture'''
     def __init__(self, in_dim=1, hidden_dim=1, out_dim=1,
-            num_layers=2, dropout=0.2, use_adj=True,
+            num_layers=2, dropout=0.2, use_adj=True, no_gnn=False,
             tasks=1, num_heads=1):
         super(Neural_Base, self).__init__()
 
         self.num_layers = num_layers
         self.dropout = dropout
         self.use_adj = use_adj
+        self.no_gnn = no_gnn
         self.num_heads = num_heads
-
         self.layers = nn.ModuleList()
-        self.layers.append(self.get_conv(in_dim, hidden_dim))
-        for l in range(self.num_layers - 1):
-            self.layers.append(self.get_conv(hidden_dim * self.num_heads, hidden_dim))
+
+        if self.no_gnn:
+            self.layers.append(nn.Linear(in_dim, hidden_dim))
+            for l in range(self.num_layers - 1):
+                self.layers.append(nn.Linear(hidden_dim, hidden_dim))
+
+        else:
+            self.layers.append(self.get_conv(in_dim, hidden_dim))
+            for l in range(self.num_layers - 1):
+                self.layers.append(self.get_conv(hidden_dim * self.num_heads, hidden_dim))
 
         # post-message-passing
         if tasks>1: # to handle Multi task learning
@@ -49,23 +57,32 @@ class Neural_Base(nn.Module):
                 self.tasks.append(nn.Linear(hidden_dim, out_dim))
         else:
             self.post_mp = nn.Sequential(
-                nn.Linear(hidden_dim * self.num_heads, hidden_dim), nn.Dropout(self.dropout),
-                nn.Linear(hidden_dim, out_dim))
+                nn.Linear(hidden_dim * self.num_heads, hidden_dim), nn.Dropout(self.dropout))
+            self.final = nn.Linear(hidden_dim, out_dim)
 
     def get_conv(self, in_dim, hidden_dim):
         raise NotImplementedError
 
     def forward(self, data):
-        x, edge_index = data.x, data.edge_index
+        x = data.x
 
-        if self.use_adj and not hasattr(self, 'adj_mat'):
-            self.convert_to_adj(edge_index, len(x))
+        if self.no_gnn:
+            for i in range(self.num_layers):
+                x = self.layers[i](x)
+                x = F.relu(x)
+                x = F.dropout(x, p=self.dropout, training=self.training)
 
-        arg = self.adj_mat if self.use_adj else edge_index
-        for i in range(self.num_layers):
-            x = self.layers[i](x, arg)
-            x = F.relu(x)
-            x = F.dropout(x, p=self.dropout, training=self.training)
+        else:
+            edge_index = data.edge_index
+            if self.use_adj and not hasattr(self, 'adj_mat'):
+                self.convert_to_adj(edge_index, len(x))
+
+            arg = self.adj_mat if self.use_adj else edge_index
+            for i in range(self.num_layers):
+                x = self.layers[i](x, arg)
+                x = F.relu(x)
+                x = F.dropout(x, p=self.dropout, training=self.training)
+
         x = self.post_mp(x)
         return x
 
