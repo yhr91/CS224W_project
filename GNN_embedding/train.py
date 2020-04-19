@@ -117,7 +117,8 @@ def trainer(args, num_folds=10):
     edgelist_file = {
         'Decagon': '../dataset_collection/PP-Decagon_ppi.csv',
         'GNBR': '../dataset_collection/GNBR-edgelist.csv',
-        'Decagon_GNBR': '../dataset_collection/Decagon_GNBR.csv'
+        'Decagon_GNBR': '../dataset_collection/Decagon_GNBR.csv',
+        'Pathways': '../dataset_collection/bio-pathways-network.csv'
     }[args.dataset]
 
     if args.heterogeneous:
@@ -211,9 +212,9 @@ if __name__ == '__main__':
     
     parser = argparse.ArgumentParser(description='Define network type and dataset.')
     parser.add_argument('--network-type', type=str, choices=['GEO_GCN', 'SAGE', 'SAGE_GCN', 'GCN', 'GEO_GAT', 'ADA_GCN'], default='GEO_GCN')
-    parser.add_argument('--dataset', type=str, choices=['Decagon', 'GNBR', 'Decagon_GNBR'], default='GNBR')
+    parser.add_argument('--dataset', type=str, choices=['Decagon', 'GNBR', 'Decagon_GNBR', 'Pathways'], default='GNBR')
     parser.add_argument('--expt_name', type=str, default=dt)
-    parser.add_argument('--use-features', type=bool, nargs='?', const=True, default=True)
+    parser.add_argument('--use-features', type=bool, nargs='?', const=True, default=False)
     parser.add_argument('--MTL', type=bool, default=False)
     parser.add_argument('--in-dim', type=int, default=13)
     parser.add_argument('--hidden-dim', type=int, default=24)
