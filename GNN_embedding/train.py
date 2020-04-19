@@ -154,6 +154,8 @@ def trainer(args, num_folds=10):
     if args.sample_diseases: # for hyperparameter tuning
         sel_diseases = [469, 317, 473, 6, 426]
     elif args.disease_class:
+        if args.disease_class is not list:
+            args.disease_class = [args.disease_class]
         sel_diseases = processed_data.get_disease_class_idx(args.disease_class)
     else:
         sel_diseases = range(len(processed_data.Y.columns))
@@ -235,7 +237,7 @@ if __name__ == '__main__':
     parser.add_argument('--shuffle', type=bool, nargs ='?', const=True, default=False)
     parser.add_argument('--score', type=str, default='f1_sum')
     parser.add_argument('--sample-diseases', type=bool, nargs='?', const=True, default=False)
-    parser.add_argument('--disease_class', type=str, default=False)
+    parser.add_argument('--disease_class', type=str, default='cancer')
     # parser.add_argument('--heterogeneous', type=bool, nargs='?', const=True, default=False)
     args = parser.parse_args()
 
