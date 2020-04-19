@@ -1,3 +1,5 @@
+import copy
+import numpy as np
 import pandas as pd
 import Bio.SwissProt as sp
 import ptm_keyword_parser
@@ -29,7 +31,9 @@ class UniProt:
         self.ptm_keyword_dict = self.create_ptm_keyword_dict()
         self.ptm_set = set()
         self.feature_set = set()
-        self.protein_feature_dict = dict()
+        self.sequence_features = dict()
+        self.protein_modification_feature_dict = dict()
+        self.localizations = dict()
 
 
     def create_ptm_keyword_dict(self):
@@ -60,10 +64,33 @@ class UniProt:
             #     if comment.startswith("SUBCELLULAR LOCATION"):
             #         print(comment)
             self.extract_features_to_dict(record)
+            self.extract_localization(record)
 
 
-    def extract_localization(self):
-        pass
+    def extract_localization(self, record):
+        all_locations = defaultdict(int)
+        for comment in record.comments:
+            if comment.startswith("SUBCELLULAR LOCATION"):
+                locations = re.split(';|\.',comment.split("SUBCELLULAR LOCATION: ")[1].split(
+                    " Note")[0].strip('.'))
+                # print(locations)
+                for location in locations:
+                    location = location.split(' {')[0].strip()
+                    if re.search(']: ', location):
+                        location = location.split(']: ')[1]
+                    if re.search(',', location):
+                        sub_locations = location.split(', ')
+                        for sub_location in sub_locations:
+                            all_locations[sub_location] += 1
+                            # print(sub_locations)
+                            # all_locations.update(set(sub_locations))
+                    else:
+                        if location =='3}':
+                            continue
+
+                        all_locations[location] += 1
+                        # print(location)
+        self.localizations[record.accessions[0]] = all_locations
 
     def extract_features_to_dict(self, record):
         # print(record.accessions[0])
@@ -109,11 +136,17 @@ class UniProt:
             #     modification = feature.qualifiers["note"].split(";")[0]
             #     print(modification)
 
-        self.protein_feature_dict[record.accessions[0]] = features
+        self.protein_modification_feature_dict[record.accessions[0]] = features
 
-    def convert_dict_to_df(self):
-        df = pd.DataFrame(self.protein_feature_dict).transpose()
-        df.to_pickle("uniprot_ptm_features.pkl")
+    def convert_dict_to_df(self, dict, path, cutoff):
+        df = pd.DataFrame(dict).transpose()
+        size_list = list()
+        for column in df.columns:
+            if np.sum(df[column]) > cutoff:
+                size_list.append(column)
+        print(size_list)
+        print(len(size_list))
+        df.to_pickle(path)
         print(df)
                 # print(feature)
                 # features[feature.type] += 1
@@ -128,7 +161,13 @@ if __name__ == '__main__':
     print(bg.PTMs)
     up = UniProt()
     up.parse_records()
-    up.convert_dict_to_df()
+    combined = copy.deepcopy(up.protein_modification_feature_dict)
+    for key in combined:
+        if key in up.localizations:
+            combined[key].update(up.localizations[key])
+    up.convert_dict_to_df(up.protein_modification_feature_dict, "uniprot_ptm_features.pkl", 20)
+    up.convert_dict_to_df(up.localizations, "uniprot_localization_features.pkl", 20)
+    up.convert_dict_to_df(combined, "uniprot_combined_features.pkl", 20)
     # print(up.ptm_set)
     # print(up.no_keywords)
     # print(up.feature_set)
