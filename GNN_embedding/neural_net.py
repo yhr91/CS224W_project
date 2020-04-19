@@ -57,8 +57,8 @@ class Neural_Base(nn.Module):
                 self.tasks.append(nn.Linear(hidden_dim, out_dim))
         else:
             self.post_mp = nn.Sequential(
-                nn.Linear(hidden_dim * self.num_heads, hidden_dim), nn.Dropout(self.dropout),
-                nn.Linear(hidden_dim, out_dim))
+                nn.Linear(hidden_dim * self.num_heads, hidden_dim), nn.Dropout(self.dropout))
+            self.final = nn.Linear(hidden_dim, out_dim)
 
     def get_conv(self, in_dim, hidden_dim):
         raise NotImplementedError
