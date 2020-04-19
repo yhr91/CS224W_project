@@ -59,14 +59,16 @@ def train(data, tasks, args, ind, fold_num, step=50):
             # if multi-task learning, apply the corresponding final linear layer
             if args.MTL:
                 out = model.tasks[idx](out) # Last layer of NN that is specific to each task
+            else:
+                out = model.final(out)
 
             out = F.log_softmax(out, dim=1) # Softmax
             loss = criterion(out[train_mask], y[train_mask], weight=weight)
 
             if args.MTL:
-                res = utils.get_acc(model, data, val_mask, y, task=idx)
+                res, _ = utils.get_acc(model, data, val_mask, y, task=idx)
             else:
-                res = utils.get_acc(model, data, val_mask, y, task=None)
+                res, _ = utils.get_acc(model, data, val_mask, y, task=None)
 
             # Model selection metric
             if args.score.split('_')[0] == 'f1':
@@ -117,7 +119,8 @@ def trainer(args, num_folds=10):
     edgelist_file = {
         'Decagon': '../dataset_collection/PP-Decagon_ppi.csv',
         'GNBR': '../dataset_collection/GNBR-edgelist.csv',
-        'Decagon_GNBR': '../dataset_collection/Decagon_GNBR.csv'
+        'Decagon_GNBR': '../dataset_collection/Decagon_GNBR.csv',
+        'Pathways': '../dataset_collection/bio-pathways-network.csv'
     }[args.dataset]
 
     if args.heterogeneous:
@@ -180,7 +183,7 @@ def trainer(args, num_folds=10):
 
             # compute accuracy
             for ind, (masks, label) in enumerate(masks_and_labels):
-                test_score = utils.get_acc(model, data, masks[f][2], label, task=ind)
+                test_score, output = utils.get_acc(model, data, masks[f][2], label, task=ind)
                 print('On fold', f, 'and disease', ind, 'score is', test_score)
                 disease_test_scores[ind].append(test_score)
 
@@ -197,13 +200,19 @@ def trainer(args, num_folds=10):
                 task = [(masks[f], y)]
                 model, score = train(data, task, args, ind, f)
 
-                test_score = utils.get_acc(model, data, masks[f][2], y, task=None)
+                test_score, output = utils.get_acc(model, data, masks[f][2], y, task=None)
                 print('On fold', f, 'and disease', ind, 'score is', test_score)
                 disease_test_scores[ind].append(test_score)
 
     # Save results
     end = time.time()
     time_taken = end - start
+
+    # Save model state and node embeddings
+    torch.save(model.state_dict(), args.dir_+'/model')
+    np.save(args.dir_+'/node_embeddings', output)
+
+    # Save results and time
     np.save(args.dir_+'/results', disease_test_scores)
     np.save(args.dir_+'/time',time_taken)
 
@@ -213,7 +222,7 @@ if __name__ == '__main__':
     
     parser = argparse.ArgumentParser(description='Define network type and dataset.')
     parser.add_argument('--network-type', type=str, choices=['GEO_GCN', 'SAGE', 'SAGE_GCN', 'GCN', 'GEO_GAT', 'ADA_GCN','NO_GNN'], default='NO_GNN')
-    parser.add_argument('--dataset', type=str, choices=['Decagon', 'GNBR', 'Decagon_GNBR'], default='GNBR')
+    parser.add_argument('--dataset', type=str, choices=['Decagon', 'GNBR', 'Decagon_GNBR', 'Pathways'], default='GNBR')
     parser.add_argument('--expt_name', type=str, default=dt)
     parser.add_argument('--use-features', type=bool, nargs='?', const=True, default=False)
     parser.add_argument('--MTL', type=bool, nargs='?', const=True, default=False)
@@ -221,7 +230,7 @@ if __name__ == '__main__':
     parser.add_argument('--hidden-dim', type=int, default=24)
     parser.add_argument('--out-dim', type=int, default=2)
     parser.add_argument('--num-heads', type=int, default=1)
-    parser.add_argument('--epochs', type=int, default=2000)
+    parser.add_argument('--epochs', type=int, default=20)
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--shuffle', type=bool, nargs ='?', const=True, default=False)
     parser.add_argument('--score', type=str, default='f1_sum')
