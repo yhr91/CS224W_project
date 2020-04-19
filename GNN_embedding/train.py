@@ -151,8 +151,10 @@ def trainer(args, num_folds=10):
     # load labels: returns all disease indices corresponding to given disease classes
     if args.sample_diseases: # for hyperparameter tuning
         sel_diseases = [469, 317, 473, 6, 426]
+    elif args.disease_class:
+        sel_diseases = processed_data.get_disease_class_idx(args.disease_class)
     else:
-        sel_diseases = processed_data.get_disease_class_idx(['cancer'])
+        sel_diseases = range(len(processed_data.Y.columns))
     processed_data.Y = processed_data.Y.iloc[:,sel_diseases]
 
     disease_test_scores = defaultdict(list)
@@ -211,26 +213,29 @@ if __name__ == '__main__':
     dt = str(datetime.now())[5:19].replace(' ', '_').replace(':', '-')
     
     parser = argparse.ArgumentParser(description='Define network type and dataset.')
-    parser.add_argument('--network-type', type=str, choices=['GEO_GCN', 'SAGE', 'SAGE_GCN', 'GCN', 'GEO_GAT', 'ADA_GCN'], default='GEO_GCN')
+    parser.add_argument('--network-type', type=str, choices=['GEO_GCN', 'SAGE', 'SAGE_GCN', 'GCN', 'GEO_GAT', 'ADA_GCN','NO_GNN'], default='NO_GNN')
     parser.add_argument('--dataset', type=str, choices=['Decagon', 'GNBR', 'Decagon_GNBR', 'Pathways'], default='GNBR')
     parser.add_argument('--expt_name', type=str, default=dt)
     parser.add_argument('--use-features', type=bool, nargs='?', const=True, default=False)
-    parser.add_argument('--MTL', type=bool, default=False)
+    parser.add_argument('--MTL', type=bool, nargs='?', const=True, default=False)
     parser.add_argument('--in-dim', type=int, default=13)
     parser.add_argument('--hidden-dim', type=int, default=24)
     parser.add_argument('--out-dim', type=int, default=2)
     parser.add_argument('--num-heads', type=int, default=1)
     parser.add_argument('--epochs', type=int, default=2000)
     parser.add_argument('--lr', type=float, default=0.001)
-    parser.add_argument('--shuffle', type=bool, default=True)
+    parser.add_argument('--shuffle', type=bool, nargs ='?', const=True, default=False)
     parser.add_argument('--score', type=str, default='f1_sum')
-    parser.add_argument('--sample-diseases', type=bool, default=True)
-    parser.add_argument('--heterogeneous', type=bool, nargs='?', const=True, default=False)
+    parser.add_argument('--sample-diseases', type=bool, nargs='?', const=True, default=False)
+    parser.add_argument('--disease_class', type=str, default=False)
+    # parser.add_argument('--heterogeneous', type=bool, nargs='?', const=True, default=False)
     args = parser.parse_args()
 
     if not args.use_features and args.in_dim > 1:
         print('Cannot have in dim of', args.in_dim, 'changing to 1.')
         args.in_dim = 1
+    
+    args.heterogeneous = args.network_type == 'ADA_GCN'
 
     def seed_torch(seed=1029):
         random.seed(seed)
