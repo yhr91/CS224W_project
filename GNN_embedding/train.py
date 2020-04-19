@@ -59,6 +59,8 @@ def train(data, tasks, args, ind, fold_num, step=50):
             # if multi-task learning, apply the corresponding final linear layer
             if args.MTL:
                 out = model.tasks[idx](out) # Last layer of NN that is specific to each task
+            else:
+                out = model.final(out)
 
             out = F.log_softmax(out, dim=1) # Softmax
             loss = criterion(out[train_mask], y[train_mask], weight=weight)
@@ -208,7 +210,7 @@ def trainer(args, num_folds=10):
 
     # Save model state and node embeddings
     torch.save(model.state_dict(), args.dir_+'/model')
-    torch.save(output, args.dir_+'/node_embeddings')
+    np.save(args.dir_+'/node_embeddings', output)
 
     # Save results and time
     np.save(args.dir_+'/results', disease_test_scores)
@@ -228,11 +230,11 @@ if __name__ == '__main__':
     parser.add_argument('--hidden-dim', type=int, default=24)
     parser.add_argument('--out-dim', type=int, default=2)
     parser.add_argument('--num-heads', type=int, default=1)
-    parser.add_argument('--epochs', type=int, default=2000)
+    parser.add_argument('--epochs', type=int, default=20)
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--shuffle', type=bool, nargs ='?', const=True, default=False)
     parser.add_argument('--score', type=str, default='f1_sum')
-    parser.add_argument('--sample-diseases', type=bool, nargs='?', const=True, default=False)
+    parser.add_argument('--sample-diseases', type=bool, nargs='?', const=True, default=True)
     parser.add_argument('--disease_class', type=str, default=False)
     # parser.add_argument('--heterogeneous', type=bool, nargs='?', const=True, default=False)
     args = parser.parse_args()
