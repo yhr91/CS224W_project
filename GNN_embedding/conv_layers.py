@@ -37,9 +37,9 @@ class sage_layer(nn.Module):
         hidden = self.linear(x)
         return hidden
 
-class ada_conv_layer(nn.Module):
+class ada_a_conv_layer(nn.Module):
     def __init__(self, in_features, out_features):
-        super(ada_conv_layer, self).__init__()
+        super(ada_a_conv_layer, self).__init__()
         self.lin1 = nn.Linear(in_features, out_features)
         self.lin2 = nn.Linear(in_features, out_features)
 
@@ -56,6 +56,96 @@ class ada_conv_layer(nn.Module):
         else:
             hidden2 = torch.mm(adj2, hidden2)
         return hidden1 + hidden2
+
+class ada_b_conv_layer(nn.Module):
+    def __init__(self, in_features, out_features):
+        super(ada_b_conv_layer, self).__init__()
+        self.lin1 = nn.Linear(in_features, out_features)
+        self.lin2 = nn.Linear(in_features, out_features)
+        self.c = nn.Parameter(torch.Tensor([.5]))
+
+    def forward(self, x, adjs):
+        adj1, adj2 = adjs
+        hidden1 = self.lin1(x)
+        hidden2 = self.lin2(x)
+        if adj1.is_sparse:
+            hidden1 = torch.sparse.mm(adj1, hidden1)
+        else:
+            hidden1 = torch.mm(adj1, hidden1)
+        if adj2.is_sparse:
+            hidden2 = torch.sparse.mm(adj2, hidden2)
+        else:
+            hidden2 = torch.mm(adj2, hidden2)
+        return 2 * (self.c * hidden1 + (1 - self.c) * hidden2)
+
+class ada_c_conv_layer(nn.Module):
+    def __init__(self, in_features, out_features):
+        super(ada_c_conv_layer, self).__init__()
+        self.lin1 = nn.Linear(in_features, out_features)
+        self.lin2 = nn.Linear(in_features, out_features)
+        self.lin3 = nn.Linear(in_features, out_features)
+
+    def forward(self, x, adjs):
+        adj1, adj2, adj3 = adjs
+        hidden1 = self.lin1(x)
+        hidden2 = self.lin2(x)
+        hidden3 = self.lin3(x)
+        if adj1.is_sparse:
+            hidden1 = torch.sparse.mm(adj1, hidden1)
+        else:
+            hidden1 = torch.mm(adj1, hidden1)
+        if adj2.is_sparse:
+            hidden2 = torch.sparse.mm(adj2, hidden2)
+        else:
+            hidden2 = torch.mm(adj2, hidden2)
+        if adj3.is_sparse:
+            hidden3 = torch.sparse.mm(adj3, hidden3)
+        else:
+            hidden3 = torch.mm(adj3, hidden3)
+        return hidden1 + hidden2 + hidden3
+
+class ada_d_conv_layer(nn.Module):
+    def __init__(self, in_features, out_features):
+        super(ada_d_conv_layer, self).__init__()
+        self.lin1 = nn.Linear(in_features, 2 * out_features)
+        self.lin2 = nn.Linear(in_features, 2 * out_features)
+
+    def forward(self, x, adjs):
+        adj1, adj2 = adjs
+        dim = x.shape[1] // 2
+        x1, x2 = x[:, :dim], x[:, dim:]
+        hidden1 = self.lin1(x1)
+        hidden2 = self.lin2(x2)
+        if adj1.is_sparse:
+            hidden1 = torch.sparse.mm(adj1, hidden1)
+        else:
+            hidden1 = torch.mm(adj1, hidden1)
+        if adj2.is_sparse:
+            hidden2 = torch.sparse.mm(adj2, hidden2)
+        else:
+            hidden2 = torch.mm(adj2, hidden2)
+        return hidden1 + hidden2
+
+class ada_e_conv_layer(nn.Module):
+    def __init__(self, in_features, out_features):
+        super(ada_e_conv_layer, self).__init__()
+        self.lin = nn.Linear(2 * in_features, 2 * out_features)
+
+    def forward(self, x, adjs):
+        adj1, adj2 = adjs
+        dim = x.shape[1] // 2
+        x1, x2 = x[:, :dim], x[:, dim:]
+        if adj1.is_sparse:
+            hidden1 = torch.sparse.mm(adj1, x1)
+        else:
+            hidden1 = torch.mm(adj1, x1)
+        if adj2.is_sparse:
+            hidden2 = torch.sparse.mm(adj2, x2)
+        else:
+            hidden2 = torch.mm(adj2, x2)
+        hidden = torch.cat((hidden1, hidden2), dim=1)
+        hidden = self.lin(hidden)
+        return hidden
 
 class SAGEConv(pyg_nn.MessagePassing):
     def __init__(self, in_channels, out_channels, normalize=True, aggr='mean',

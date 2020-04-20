@@ -16,19 +16,24 @@ def get_neural_network(args):
         'SAGE_GCN': sage_gcn,
         'GCN': gcn,
         'GEO_GAT': geo_gat,
-        'ADA_GCN': ada_gcn,
+        'ADA_A': ada_a,
+        'ADA_B': ada_b,
+        'ADA_C': ada_c,
+        'ADA_D': ada_d,
+        'ADA_E': ada_e,
         'NO_GNN':geo_gcn}[args.network_type]
     use_adj = 'GEO' not in args.network_type
     no_gnn = 'NO_GNN' in args.network_type
+    joint = 'ADA_D' in args.network_type or 'ADA_E' in args.network_type
     model = model(args.in_dim, args.hidden_dim, args.out_dim, use_adj=use_adj,
-        tasks=args.tasks, no_gnn=no_gnn)
+        tasks=args.tasks, no_gnn=no_gnn, joint=joint)
     return model
 
 class Neural_Base(nn.Module):
     '''Abstract class for general neural networking architecture'''
     def __init__(self, in_dim=1, hidden_dim=1, out_dim=1,
             num_layers=2, dropout=0.2, use_adj=True, no_gnn=False,
-            tasks=1, num_heads=1):
+            tasks=1, num_heads=1, joint=False):
         super(Neural_Base, self).__init__()
 
         self.num_layers = num_layers
@@ -36,6 +41,7 @@ class Neural_Base(nn.Module):
         self.use_adj = use_adj
         self.no_gnn = no_gnn
         self.num_heads = num_heads
+        self.joint = 1 + int(joint)
         self.layers = nn.ModuleList()
 
         if self.no_gnn:
@@ -51,13 +57,13 @@ class Neural_Base(nn.Module):
         # post-message-passing
         if tasks>1: # to handle Multi task learning
             self.post_mp = nn.Sequential(
-                nn.Linear(hidden_dim * self.num_heads, hidden_dim), nn.Dropout(self.dropout))
+                nn.Linear(hidden_dim * self.num_heads * self.joint, hidden_dim), nn.Dropout(self.dropout))
             self.tasks = nn.ModuleList()
             for i in range(tasks):
                 self.tasks.append(nn.Linear(hidden_dim, out_dim))
         else:
             self.post_mp = nn.Sequential(
-                nn.Linear(hidden_dim * self.num_heads, hidden_dim), nn.Dropout(self.dropout))
+                nn.Linear(hidden_dim * self.num_heads * self.joint, hidden_dim), nn.Dropout(self.dropout))
             self.final = nn.Linear(hidden_dim, out_dim)
 
     def get_conv(self, in_dim, hidden_dim):
@@ -79,7 +85,10 @@ class Neural_Base(nn.Module):
 
             arg = self.adj_mat if self.use_adj else edge_index
             for i in range(self.num_layers):
-                x = self.layers[i](x, arg)
+                if data.edge_attr is not None:
+                    x = self.layers[i](x, arg, data.edge_attr)
+                else:
+                    x = self.layers[i](x, arg)
                 x = F.relu(x)
                 x = F.dropout(x, p=self.dropout, training=self.training)
 
@@ -158,9 +167,10 @@ class gcn(Neural_Base):
         adj_mat = torch.sparse.FloatTensor(edge_index, vals, (num_nodes, num_nodes)).to(device)
         self.adj_mat = adj_mat
 
-class ada_gcn(Neural_Base):
+class ada_a(Neural_Base):
+    '''straightforward simplification of R-GCN'''
     def get_conv(self, in_dim, out_dim):
-        return conv_layers.ada_conv_layer(in_dim, out_dim)
+        return conv_layers.ada_a_conv_layer(in_dim, out_dim)
 
     def convert_to_adj(self, edge_indexes, num_nodes):
         assert len(edge_indexes) == 2, 'need separate edge indices'
@@ -193,3 +203,177 @@ class ada_gcn(Neural_Base):
 
         adj_mat2 = torch.sparse.FloatTensor(edge2, vals, (num_nodes, num_nodes)).to(device)
         self.adj_mat = (adj_mat1, adj_mat2)
+
+class ada_b(Neural_Base):
+    '''weighted version of simplified R-GCN'''
+    def get_conv(self, in_dim, out_dim):
+        return conv_layers.ada_b_conv_layer(in_dim, out_dim)
+
+    def convert_to_adj(self, edge_indexes, num_nodes):
+        assert len(edge_indexes) == 2, 'need separate edge indices'
+        edge1, edge2 = edge_indexes
+        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        
+        # add self loops to edge_index
+        self_loops = torch.stack((torch.arange(num_nodes), torch.arange(num_nodes))).to(device)
+        edge1 = edge1.to(device)
+        edge1 = torch.cat((edge1, self_loops), dim=1)
+
+        # divide adjacency matrix by node degree to obtain the mean
+        # according to the GraphSAGE paper: https://arxiv.org/abs/1706.02216
+        vals = torch.ones(edge1.shape[1], device=device)
+        degs = scatter(vals, edge1[0], dim=0, dim_size=num_nodes, reduce='sum')
+        vals = vals / degs[edge1[0]] # divide by node degree
+
+        adj_mat1 = torch.sparse.FloatTensor(edge1, vals, (num_nodes, num_nodes)).to(device)
+
+        # add self loops to edge_index
+        self_loops = torch.stack((torch.arange(num_nodes), torch.arange(num_nodes))).to(device)
+        edge2 = edge2.to(device)
+        edge2 = torch.cat((edge2, self_loops), dim=1)
+
+        # divide adjacency matrix by node degree to obtain the mean
+        # according to the GraphSAGE paper: https://arxiv.org/abs/1706.02216
+        vals = torch.ones(edge2.shape[1], device=device)
+        degs = scatter(vals, edge2[0], dim=0, dim_size=num_nodes, reduce='sum')
+        vals = vals / degs[edge2[0]] # divide by node degree
+
+        adj_mat2 = torch.sparse.FloatTensor(edge2, vals, (num_nodes, num_nodes)).to(device)
+        self.adj_mat = (adj_mat1, adj_mat2)
+
+class ada_c(Neural_Base):
+    '''r-gcn with self loops'''
+    def get_conv(self, in_dim, out_dim):
+        return conv_layers.ada_c_conv_layer(in_dim, out_dim)
+
+    def convert_to_adj(self, edge_indexes, num_nodes):
+        assert len(edge_indexes) == 2, 'need separate edge indices'
+        edge1, edge2 = edge_indexes
+        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        edge1 = edge1.to(device)
+        edge2 = edge2.to(device)
+
+        self_loops = torch.stack((torch.arange(num_nodes), torch.arange(num_nodes)))
+        vals = torch.ones(self_loops.shape[1])
+        adj_mat3 = torch.sparse.FloatTensor(self_loops, vals, (num_nodes, num_nodes)).to(device)
+
+        # divide adjacency matrix by node degree to obtain the mean
+        # according to the GraphSAGE paper: https://arxiv.org/abs/1706.02216
+        vals = torch.ones(edge1.shape[1], device=device)
+        degs = scatter(vals, edge1[0], dim=0, dim_size=num_nodes, reduce='sum')
+        vals = vals / degs[edge1[0]] # divide by node degree
+
+        adj_mat1 = torch.sparse.FloatTensor(edge1, vals, (num_nodes, num_nodes)).to(device)
+
+        # divide adjacency matrix by node degree to obtain the mean
+        # according to the GraphSAGE paper: https://arxiv.org/abs/1706.02216
+        vals = torch.ones(edge2.shape[1], device=device)
+        degs = scatter(vals, edge2[0], dim=0, dim_size=num_nodes, reduce='sum')
+        vals = vals / degs[edge2[0]] # divide by node degree
+
+        adj_mat2 = torch.sparse.FloatTensor(edge2, vals, (num_nodes, num_nodes)).to(device)
+        self.adj_mat = (adj_mat1, adj_mat2, adj_mat3)
+
+class ada_d(Neural_Base):
+    '''joint representation'''
+    def get_conv(self, in_dim, out_dim):
+        return conv_layers.ada_d_conv_layer(in_dim, out_dim)
+
+    def convert_to_adj(self, edge_indexes, num_nodes):
+        assert len(edge_indexes) == 2, 'need separate edge indices'
+        edge1, edge2 = edge_indexes
+        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        
+        # add self loops to edge_index
+        self_loops = torch.stack((torch.arange(num_nodes), torch.arange(num_nodes))).to(device)
+        edge1 = edge1.to(device)
+        edge1 = torch.cat((edge1, self_loops), dim=1)
+
+        # divide adjacency matrix by node degree to obtain the mean
+        # according to the GraphSAGE paper: https://arxiv.org/abs/1706.02216
+        vals = torch.ones(edge1.shape[1], device=device)
+        degs = scatter(vals, edge1[0], dim=0, dim_size=num_nodes, reduce='sum')
+        vals = vals / degs[edge1[0]] # divide by node degree
+
+        adj_mat1 = torch.sparse.FloatTensor(edge1, vals, (num_nodes, num_nodes)).to(device)
+
+        # add self loops to edge_index
+        self_loops = torch.stack((torch.arange(num_nodes), torch.arange(num_nodes))).to(device)
+        edge2 = edge2.to(device)
+        edge2 = torch.cat((edge2, self_loops), dim=1)
+
+        # divide adjacency matrix by node degree to obtain the mean
+        # according to the GraphSAGE paper: https://arxiv.org/abs/1706.02216
+        vals = torch.ones(edge2.shape[1], device=device)
+        degs = scatter(vals, edge2[0], dim=0, dim_size=num_nodes, reduce='sum')
+        vals = vals / degs[edge2[0]] # divide by node degree
+
+        adj_mat2 = torch.sparse.FloatTensor(edge2, vals, (num_nodes, num_nodes)).to(device)
+        self.adj_mat = (adj_mat1, adj_mat2)
+    
+    def forward(self, data):
+        x = data.x
+        edge_index = data.edge_index
+        self.convert_to_adj(edge_index, len(x))
+
+        arg = self.adj_mat
+        x = torch.cat((x, x), dim=1)
+        for i in range(self.num_layers):
+            x = self.layers[i](x, arg)
+            x = F.relu(x)
+            x = F.dropout(x, p=self.dropout, training=self.training)
+
+        x = self.post_mp(x)
+        return x
+
+class ada_e(Neural_Base):
+    '''joint representation'''
+    def get_conv(self, in_dim, out_dim):
+        return conv_layers.ada_e_conv_layer(in_dim, out_dim)
+
+    def convert_to_adj(self, edge_indexes, num_nodes):
+        assert len(edge_indexes) == 2, 'need separate edge indices'
+        edge1, edge2 = edge_indexes
+        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        
+        # add self loops to edge_index
+        self_loops = torch.stack((torch.arange(num_nodes), torch.arange(num_nodes))).to(device)
+        edge1 = edge1.to(device)
+        edge1 = torch.cat((edge1, self_loops), dim=1)
+
+        # divide adjacency matrix by node degree to obtain the mean
+        # according to the GraphSAGE paper: https://arxiv.org/abs/1706.02216
+        vals = torch.ones(edge1.shape[1], device=device)
+        degs = scatter(vals, edge1[0], dim=0, dim_size=num_nodes, reduce='sum')
+        vals = vals / degs[edge1[0]] # divide by node degree
+
+        adj_mat1 = torch.sparse.FloatTensor(edge1, vals, (num_nodes, num_nodes)).to(device)
+
+        # add self loops to edge_index
+        self_loops = torch.stack((torch.arange(num_nodes), torch.arange(num_nodes))).to(device)
+        edge2 = edge2.to(device)
+        edge2 = torch.cat((edge2, self_loops), dim=1)
+
+        # divide adjacency matrix by node degree to obtain the mean
+        # according to the GraphSAGE paper: https://arxiv.org/abs/1706.02216
+        vals = torch.ones(edge2.shape[1], device=device)
+        degs = scatter(vals, edge2[0], dim=0, dim_size=num_nodes, reduce='sum')
+        vals = vals / degs[edge2[0]] # divide by node degree
+
+        adj_mat2 = torch.sparse.FloatTensor(edge2, vals, (num_nodes, num_nodes)).to(device)
+        self.adj_mat = (adj_mat1, adj_mat2)
+    
+    def forward(self, data):
+        x = data.x
+        edge_index = data.edge_index
+        self.convert_to_adj(edge_index, len(x))
+
+        arg = self.adj_mat
+        x = torch.cat((x, x), dim=1)
+        for i in range(self.num_layers):
+            x = self.layers[i](x, arg)
+            x = F.relu(x)
+            x = F.dropout(x, p=self.dropout, training=self.training)
+
+        x = self.post_mp(x)
+        return x
