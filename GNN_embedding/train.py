@@ -166,10 +166,14 @@ def trainer(args, num_folds=10):
         if args.disease_class is not list:
             args.disease_class = [args.disease_class]
         sel_diseases = processed_data.get_disease_class_idx(args.disease_class)
+        
+        if args.holdout:
+            sel_diseases.append(args.holdout)
+    
     else:
         sel_diseases = range(len(processed_data.Y.columns))
+    
     processed_data.Y = processed_data.Y.iloc[:,sel_diseases]
-
     disease_test_scores = defaultdict(list)
     
     # If multi task learning
@@ -244,6 +248,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--shuffle', type=bool, nargs ='?', const=True, default=False)
     parser.add_argument('--score', type=str, default='loss_sum')
+    parser.add_argument('--holdout', type=int, default=False)
     parser.add_argument('--sample-diseases', type=bool, nargs='?', const=True, default=False)
     parser.add_argument('--disease_class', type=str, default='nervous system disease')
     #parser.add_argument('--heterogeneous', type=bool, nargs='?', const=True, default=False)

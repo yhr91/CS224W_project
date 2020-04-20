@@ -1,0 +1,4 @@
+#!/bin/bash
+python3 train.py --network-type GEO_GCN --dataset Decagon --use-features --MTL --epochs 1000 --score loss_sum --hidden-dim 36 --shuffle --holdout 72 --disease_class "cardiovascular system disease" --expt_name cardio_MT_holdout_72
+python3 train.py --network-type GEO_GCN --dataset Decagon --use-features --MTL --epochs 1000 --score loss_sum --hidden-dim 36 --shuffle --holdout 72 --disease_class "monogenic disease" --expt_name monogenic_MT_holdout_72
+python3 train.py --network-type GEO_GCN --dataset Decagon --use-features --MTL --epochs 1000 --score loss_sum --hidden-dim 36 --shuffle --holdout 72 --disease_class "cancer" --expt_name cancer_MT_holdout_72_
