@@ -227,6 +227,7 @@ def trainer(args, num_folds=10):
     torch.save(model.state_dict(), args.dir_+'/model')
 
     # Save results and time
+    np.save(args.dir_+'/results', disease_test_scores)
     np.save(args.dir_+'/time',time_taken)
 
 if __name__ == '__main__':
