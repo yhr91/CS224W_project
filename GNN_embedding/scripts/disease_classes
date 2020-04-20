@@ -1,0 +1,11 @@
+#!/bin/bash
+#python3 train.py --network-type GEO_GCN --dataset Decagon --use-features --MTL --epochs 1000 --score loss_sum --hidden-dim 36 --shuffle --disease_class "cardiovascular system disease" --expt_name cardio_MT
+python3 train.py --network-type GEO_GCN --dataset Decagon --use-features --MTL --epochs 1000 --score loss_sum --hidden-dim 36 --shuffle --disease_class "immune system disease" --expt_name immune_MT
+python3 train.py --network-type GEO_GCN --dataset Decagon --use-features --MTL --epochs 1000 --score loss_sum --hidden-dim 36 --shuffle --disease_class "monogenic disease" --expt_name monogenic_MT
+python3 train.py --network-type GEO_GCN --dataset Decagon --use-features --MTL --epochs 1000 --score loss_sum --hidden-dim 36 --shuffle --disease_class "respiratory system disease" --expt_name respiratory_MT
+python3 train.py --network-type GEO_GCN --dataset Decagon --use-features --MTL --epochs 1000 --score loss_sum --hidden-dim 36 --shuffle --disease_class "endocrine system disease" --expt_name endocrine_MT
+python3 train.py --network-type GEO_GCN --dataset Decagon --use-features --MTL --epochs 1000 --score loss_sum --hidden-dim 36 --shuffle --disease_class "gastrointestinal system disease" --expt_name gastro_MT
+python3 train.py --network-type GEO_GCN --dataset Decagon --use-features --MTL --epochs 1000 --score loss_sum --hidden-dim 36 --shuffle --disease_class "inherited metabolic disorder" --expt_name metabolic_MT
+python3 train.py --network-type GEO_GCN --dataset Decagon --use-features --MTL --epochs 1000 --score loss_sum --hidden-dim 36 --shuffle --disease_class "musculoskeletal system disease" --expt_name musculoskeletal_MT
+python3 train.py --network-type GEO_GCN --dataset Decagon --use-features --MTL --epochs 1000 --score loss_sum --hidden-dim 36 --shuffle --disease_class "viral infectious disease" --expt_name viral_MT
+python3 train.py --network-type GEO_GCN --dataset Decagon --use-features --MTL --epochs 1000 --score loss_sum --hidden-dim 36 --shuffle --disease_class "urinary system disease" --expt_name urinary_MT
