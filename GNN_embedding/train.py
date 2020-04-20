@@ -121,7 +121,7 @@ def trainer(args, num_folds=10):
     edgelist_file = {
         'Decagon': '../dataset_collection/PP-Decagon_ppi.csv',
         'GNBR': '../dataset_collection/GNBR-edgelist.csv',
-        'Decagon_GNBR': '../dataset_collection/Decagon_GNBR.csv',
+        'Decagon_GNBR': '../dataset_collection/Decagon_GNBR_2.csv',
         'Pathways': '../dataset_collection/bio-pathways-network.csv'
     }[args.dataset]
 
@@ -139,7 +139,7 @@ def trainer(args, num_folds=10):
                 args.network_type+'_'+args.dataset+'_'+feat_str+'_'+het_str
 
     # If creating a multi graph. TO-DO: move this to load_assoc
-    if args.network_type=='MULTI_EDGE_GCN':
+    if args.edge_attr>1:
         edge_attr = pd.read_csv('../dataset_collection/Decagon_GNBR_MultiEdges.csv')
         edge_attr = torch.tensor(edge_attr.T.values, dtype=torch.float)
     else:
@@ -230,20 +230,21 @@ if __name__ == '__main__':
     dt = str(datetime.now())[5:19].replace(' ', '_').replace(':', '-')
     
     parser = argparse.ArgumentParser(description='Define network type and dataset.')
-    parser.add_argument('--network-type', type=str, choices=['GEO_GCN', 'SAGE', 'SAGE_GCN', 'GCN', 'GEO_GAT', 'ADA_GCN','NO_GNN', 'MULTI_EDGE_GCN'], default='MULTI_EDGE_GCN')
-    parser.add_argument('--dataset', type=str, choices=['Decagon', 'GNBR', 'Decagon_GNBR', 'Pathways'], default='Decagon_GNBR')
+    parser.add_argument('--network-type', type=str, choices=['GEO_GCN', 'SAGE', 'SAGE_GCN', 'GCN', 'GEO_GAT', 'ADA_GCN','NO_GNN', ], default='GEO_GCN')
+    parser.add_argument('--dataset', type=str, choices=['Decagon', 'GNBR', 'Decagon_GNBR', 'Pathways'], default='GNBR')
     parser.add_argument('--expt_name', type=str, default=dt)
     parser.add_argument('--use-features', type=bool, nargs='?', const=True, default=False)
-    parser.add_argument('--MTL', type=bool, nargs='?', const=True, default=True)
+    parser.add_argument('--MTL', type=bool, nargs='?', const=True, default=False)
     parser.add_argument('--in-dim', type=int, default=13)
     parser.add_argument('--hidden-dim', type=int, default=24)
     parser.add_argument('--out-dim', type=int, default=2)
+    parser.add_argument('--edge-attr', type=int, default=1)
     parser.add_argument('--num-heads', type=int, default=1)
     parser.add_argument('--epochs', type=int, default=20)
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--shuffle', type=bool, nargs ='?', const=True, default=False)
-    parser.add_argument('--score', type=str, default='f1_sum')
-    parser.add_argument('--sample-diseases', type=bool, nargs='?', const=True, default=True)
+    parser.add_argument('--score', type=str, default='loss_sum')
+    parser.add_argument('--sample-diseases', type=bool, nargs='?', const=True, default=False)
     parser.add_argument('--disease_class', type=str, default='nervous system disease')
     #parser.add_argument('--heterogeneous', type=bool, nargs='?', const=True, default=False)
     args = parser.parse_args()
