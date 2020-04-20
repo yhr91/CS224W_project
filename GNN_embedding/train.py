@@ -8,6 +8,7 @@ from datetime import datetime
 import numpy as np
 from load_assoc import ProcessData
 import neural_net
+import pandas as pd
 import utils
 from torch.utils.tensorboard import SummaryWriter
 import copy
@@ -116,10 +117,11 @@ def train(data, tasks, args, ind, fold_num, step=50):
 
 def trainer(args, num_folds=10):
     start = time.time()
+
     edgelist_file = {
         'Decagon': '../dataset_collection/PP-Decagon_ppi.csv',
         'GNBR': '../dataset_collection/GNBR-edgelist.csv',
-        'Decagon_GNBR': '../dataset_collection/Decagon_GNBR.csv',
+        'Decagon_GNBR': '../dataset_collection/Decagon_GNBR_2.csv',
         'Pathways': '../dataset_collection/bio-pathways-network.csv'
     }[args.dataset]
 
@@ -136,13 +138,20 @@ def trainer(args, num_folds=10):
     args.dir_ = './tensorboard_runs/'+args.expt_name+'/'+\
                 args.network_type+'_'+args.dataset+'_'+feat_str+'_'+het_str
 
+    # If creating a multi graph. TO-DO: move this to load_assoc
+    if args.edge_attr>1:
+        edge_attr = pd.read_csv('../dataset_collection/Decagon_GNBR_MultiEdges.csv')
+        edge_attr = torch.tensor(edge_attr.T.values, dtype=torch.float)
+    else:
+        edge_attr = None
+
     # load graph
     processed_data = ProcessData(edgelist_file, use_features=args.use_features)
     X = processed_data.X
     X = torch.tensor(X.values, dtype=torch.float)
     edges = processed_data.get_edges()
     edges = torch.tensor(edges.values, dtype=torch.long)
-    data = utils.load_graph(X, edges)
+    data = utils.load_graph(X, edges, edge_attr=edge_attr)
 
     if args.heterogeneous:
         edges2 = processed_data.get_edges(edgelist_file=edgelist_file2)
@@ -212,10 +221,8 @@ def trainer(args, num_folds=10):
 
     # Save model state and node embeddings
     torch.save(model.state_dict(), args.dir_+'/model')
-    np.save(args.dir_+'/node_embeddings', output)
 
     # Save results and time
-    np.save(args.dir_+'/results', disease_test_scores)
     np.save(args.dir_+'/time',time_taken)
 
 if __name__ == '__main__':
@@ -223,7 +230,7 @@ if __name__ == '__main__':
     dt = str(datetime.now())[5:19].replace(' ', '_').replace(':', '-')
     
     parser = argparse.ArgumentParser(description='Define network type and dataset.')
-    parser.add_argument('--network-type', type=str, choices=['GEO_GCN', 'SAGE', 'SAGE_GCN', 'GCN', 'GEO_GAT', 'ADA_GCN','NO_GNN'], default='NO_GNN')
+    parser.add_argument('--network-type', type=str, choices=['GEO_GCN', 'SAGE', 'SAGE_GCN', 'GCN', 'GEO_GAT', 'ADA_GCN','NO_GNN', ], default='GEO_GCN')
     parser.add_argument('--dataset', type=str, choices=['Decagon', 'GNBR', 'Decagon_GNBR', 'Pathways'], default='GNBR')
     parser.add_argument('--expt_name', type=str, default=dt)
     parser.add_argument('--use-features', type=bool, nargs='?', const=True, default=False)
@@ -231,14 +238,15 @@ if __name__ == '__main__':
     parser.add_argument('--in-dim', type=int, default=13)
     parser.add_argument('--hidden-dim', type=int, default=24)
     parser.add_argument('--out-dim', type=int, default=2)
+    parser.add_argument('--edge-attr', type=int, default=1)
     parser.add_argument('--num-heads', type=int, default=1)
     parser.add_argument('--epochs', type=int, default=20)
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--shuffle', type=bool, nargs ='?', const=True, default=False)
-    parser.add_argument('--score', type=str, default='f1_sum')
+    parser.add_argument('--score', type=str, default='loss_sum')
     parser.add_argument('--sample-diseases', type=bool, nargs='?', const=True, default=False)
-    parser.add_argument('--disease_class', type=str, default='cancer')
-    # parser.add_argument('--heterogeneous', type=bool, nargs='?', const=True, default=False)
+    parser.add_argument('--disease_class', type=str, default='nervous system disease')
+    #parser.add_argument('--heterogeneous', type=bool, nargs='?', const=True, default=False)
     args = parser.parse_args()
 
     if not args.use_features and args.in_dim > 1:

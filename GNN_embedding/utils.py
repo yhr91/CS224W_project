@@ -49,7 +49,7 @@ def insert_edges(edges):
     edges = edges.type(torch.long)
     return edges
 
-def load_graph(X, edges, y=None): 
+def load_graph(X, edges, y=None, edge_attr=None):
     '''
     Wrap data in a Data object for pyg
     Expects X to be a tensor of shape [N, feats]
@@ -57,7 +57,8 @@ def load_graph(X, edges, y=None):
     Expects y to be a tensor of shape [N], or None
     '''
     edges = insert_edges(edges)
-    return Data(x=X, edge_index=edges.t().contiguous(), y=y)
+    return Data(x=X, edge_index=edges.t().contiguous(), y=y,
+                edge_attr=edge_attr)
 
 # Evaluates the validation, test accuracy
 def get_acc(model, data, mask, label, is_val=False, k=100, task=None):
