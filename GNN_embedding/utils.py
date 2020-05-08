@@ -94,4 +94,4 @@ def get_acc(model, data, mask, label, is_val=False, k=100, task=None):
 def get_weight(x_, device):
     a, b = np.unique(x_.cpu().numpy(), return_counts=True)[1]
     return torch.tensor([(1 - a / (a + b)), (1 - b / (a + b))],
-                        device = device)
+                        device = device, dtype=torch.float32)

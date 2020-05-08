@@ -233,7 +233,7 @@ def trainer(args, num_folds=10):
 if __name__ == '__main__':
     import argparse
     dt = str(datetime.now())[5:19].replace(' ', '_').replace(':', '-')
-    
+    torch.cuda.set_device(7)    
     parser = argparse.ArgumentParser(description='Define network type and dataset.')
     parser.add_argument('--network-type', type=str, choices=['GEO_GCN', 'SAGE', 'SAGE_GCN', 'GCN', 'GEO_GAT', 'ADA_GCN','NO_GNN', ], default='GEO_GCN')
     parser.add_argument('--dataset', type=str, choices=['Decagon', 'GNBR', 'Decagon_GNBR', 'Pathways'], default='GNBR')
@@ -251,7 +251,7 @@ if __name__ == '__main__':
     parser.add_argument('--score', type=str, default='loss_sum')
     parser.add_argument('--holdout', type=int, default=False)
     parser.add_argument('--sample-diseases', type=bool, nargs='?', const=True, default=False)
-    parser.add_argument('--disease_class', type=str, default='nervous system disease')
+    parser.add_argument('--disease_class', type=str, default=False)
     #parser.add_argument('--heterogeneous', type=bool, nargs='?', const=True, default=False)
     args = parser.parse_args()
 
