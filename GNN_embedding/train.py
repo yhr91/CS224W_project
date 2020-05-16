@@ -208,8 +208,9 @@ def trainer(args, num_folds=10):
                 print('On fold', f, 'and disease', ind, 'score is', test_score)
                 disease_test_scores[ind].append(test_score)
 
-                # Save model state and node embeddings
-                torch.save(model.state_dict(), args.dir_ + '/model_'+sel_diseases[ind])
+            # Save MTL model state, there is only one central model with multiple heads
+            # Use the first disease in the MTL list to index
+            torch.save(model.state_dict(), args.dir_ + '/model_'+str(sel_diseases[0]))
 
     # If single task learning
     else:
@@ -228,8 +229,8 @@ def trainer(args, num_folds=10):
                 print('On fold', f, 'and disease', ind, 'score is', test_score)
                 disease_test_scores[ind].append(test_score)
 
-                # Save model state and node embeddings
-                torch.save(model.state_dict(), args.dir_ + '/model_'+sel_diseases[ind])
+                # Save model state
+                torch.save(model.state_dict(), args.dir_ + '/model_'+str(sel_diseases[ind]))
 
 
     # Save results
@@ -243,7 +244,7 @@ def trainer(args, num_folds=10):
 if __name__ == '__main__':
     import argparse
     dt = str(datetime.now())[5:19].replace(' ', '_').replace(':', '-')
-    torch.cuda.set_device(7) 
+    torch.cuda.set_device(8) 
     parser = argparse.ArgumentParser(description='Define network type and dataset.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--network-type', type=str, choices=['GEO_GCN', 'SAGE', 'SAGE_GCN', 'GCN', 'GEO_GAT',
         'ADA_A', 'ADA_B', 'ADA_C', 'ADA_D', 'ADA_E', 'NO_GNN'], default='GEO_GCN', help='(default: %(default)s)')
