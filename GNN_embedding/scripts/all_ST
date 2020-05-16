@@ -1,0 +1,2 @@
+#!/bin/bash
+python3 train.py --network-type GEO_GCN --dataset Decagon --use-features --epochs 1000 --score loss_sum --hidden-dim 36 --shuffle --expt_name all_ST

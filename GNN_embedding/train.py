@@ -234,6 +234,7 @@ def trainer(args, num_folds=10):
 if __name__ == '__main__':
     import argparse
     dt = str(datetime.now())[5:19].replace(' ', '_').replace(':', '-')
+<<<<<<< HEAD
     
     parser = argparse.ArgumentParser(description='Define network type and dataset.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--network-type', type=str, choices=['GEO_GCN', 'SAGE', 'SAGE_GCN', 'GCN', 'GEO_GAT',
@@ -255,6 +256,27 @@ if __name__ == '__main__':
     parser.add_argument('--sample-diseases', type=bool, nargs='?', const=True, default=False, help='(default: %(default)s)')
     parser.add_argument('--disease_class', type=str, default='nervous system disease', help='(default: %(default)s)')
     parser.add_argument('--step', type=int, default=50, help='(default: %(default)s)')
+=======
+    torch.cuda.set_device(7)    
+    parser = argparse.ArgumentParser(description='Define network type and dataset.')
+    parser.add_argument('--network-type', type=str, choices=['GEO_GCN', 'SAGE', 'SAGE_GCN', 'GCN', 'GEO_GAT', 'ADA_GCN','NO_GNN', ], default='GEO_GCN')
+    parser.add_argument('--dataset', type=str, choices=['Decagon', 'GNBR', 'Decagon_GNBR', 'Pathways'], default='GNBR')
+    parser.add_argument('--expt_name', type=str, default=dt)
+    parser.add_argument('--use-features', type=bool, nargs='?', const=True, default=False)
+    parser.add_argument('--MTL', type=bool, nargs='?', const=True, default=False)
+    parser.add_argument('--in-dim', type=int, default=13)
+    parser.add_argument('--hidden-dim', type=int, default=24)
+    parser.add_argument('--out-dim', type=int, default=2)
+    parser.add_argument('--edge-attr', type=int, default=1)
+    parser.add_argument('--num-heads', type=int, default=1)
+    parser.add_argument('--epochs', type=int, default=20)
+    parser.add_argument('--lr', type=float, default=0.001)
+    parser.add_argument('--shuffle', type=bool, nargs ='?', const=True, default=False)
+    parser.add_argument('--score', type=str, default='loss_sum')
+    parser.add_argument('--holdout', type=int, default=False)
+    parser.add_argument('--sample-diseases', type=bool, nargs='?', const=True, default=False)
+    parser.add_argument('--disease_class', type=str, default=False)
+>>>>>>> 8a57f9ab3371057c9ec7f103d4deeb25226bcc56
     #parser.add_argument('--heterogeneous', type=bool, nargs='?', const=True, default=False)
     args = parser.parse_args()
 
