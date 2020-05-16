@@ -182,7 +182,9 @@ def trainer(args, num_folds=10):
         fold_itr = [np.random.randint(num_folds)]
     else:
     	fold_itr = range(num_folds)
- 
+    
+    saved = False 
+
     # If multi task learning
     if args.MTL:
         args.tasks = len(sel_diseases)
@@ -201,6 +203,9 @@ def trainer(args, num_folds=10):
 
             # Use the list of training datasets for all diseases at a specifc fold to train
             model, score = train(data, tasks, args, len(tasks), f)
+            if not saved:
+                torch.save(model, args.dir_ +'/base_model')
+                saved = True
 
             # compute accuracy
             for ind, (masks, label) in enumerate(masks_and_labels):
@@ -210,7 +215,7 @@ def trainer(args, num_folds=10):
 
             # Save MTL model state, there is only one central model with multiple heads
             # Use the first disease in the MTL list to index
-            torch.save(model.state_dict(), args.dir_ + '/model_'+str(sel_diseases[0]))
+            torch.save(model.state_dict(), args.dir_ + '/model_'+str(sel_diseases[0])+'_'+str(f))
 
     # If single task learning
     else:
@@ -225,12 +230,16 @@ def trainer(args, num_folds=10):
                 task = [(masks[f], y)]
                 model, score = train(data, task, args, ind, f)
 
+                if not saved:
+                     torch.save(model, args.dir_ +'/base_model')
+                     saved = True
+
                 test_score, output = utils.get_acc(model, data, masks[f][2], y, task=None)
                 print('On fold', f, 'and disease', ind, 'score is', test_score)
                 disease_test_scores[ind].append(test_score)
 
                 # Save model state
-                torch.save(model.state_dict(), args.dir_ + '/model_'+str(sel_diseases[ind]))
+                torch.save(model.state_dict(), args.dir_ + '/model_'+str(sel_diseases[ind])+'_'+str(f))
 
 
     # Save results
@@ -244,7 +253,7 @@ def trainer(args, num_folds=10):
 if __name__ == '__main__':
     import argparse
     dt = str(datetime.now())[5:19].replace(' ', '_').replace(':', '-')
-    torch.cuda.set_device(8) 
+    torch.cuda.set_device(7) 
     parser = argparse.ArgumentParser(description='Define network type and dataset.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--network-type', type=str, choices=['GEO_GCN', 'SAGE', 'SAGE_GCN', 'GCN', 'GEO_GAT',
         'ADA_A', 'ADA_B', 'ADA_C', 'ADA_D', 'ADA_E', 'NO_GNN'], default='GEO_GCN', help='(default: %(default)s)')
@@ -263,7 +272,7 @@ if __name__ == '__main__':
     parser.add_argument('--score', type=str, default='loss_sum', help='(default: %(default)s)')
     parser.add_argument('--holdout', type=int, default=False, help='(default: %(default)s)')
     parser.add_argument('--sample-diseases', type=bool, nargs='?', const=True, default=False, help='(default: %(default)s)')
-    parser.add_argument('--disease_class', type=str, default='nervous system disease', help='(default: %(default)s)')
+    parser.add_argument('--disease_class', type=str, default=False, help='(default: %(default)s)')
     parser.add_argument('--step', type=int, default=50, help='(default: %(default)s)')
     parser.add_argument('--no-fold', type=bool, nargs ='?', const=True, default=False)
     #parser.add_argument('--heterogeneous', type=bool, nargs='?', const=True, default=False)
