@@ -185,8 +185,13 @@ def trainer(args, num_folds=10):
             y = torch.tensor(processed_data.Y[col].values.astype('int'), dtype=torch.long)
             masks_and_labels.append((utils.load_masks(y), y))
 
-        # Iterate over folds
-        for f in range(num_folds):
+        # Either iterate over folds or pick a random fold
+        if (args.no_fold):
+            fold_itr = [np.random.randint(num_folds)]
+        else:
+            fold_itr = range(num_folds)
+
+        for f in fold_itr:
             print('fold', f, 'out of', num_folds)
             tasks = []
             # collect the set of masks and labels associated with this fold
@@ -201,6 +206,9 @@ def trainer(args, num_folds=10):
                 test_score, output = utils.get_acc(model, data, masks[f][2], label, task=ind)
                 print('On fold', f, 'and disease', ind, 'score is', test_score)
                 disease_test_scores[ind].append(test_score)
+
+                # Save model state and node embeddings
+                torch.save(model.state_dict(), args.dir_ + '/model_'+sel_diseases[ind])
 
     # If single task learning
     else:
@@ -222,9 +230,6 @@ def trainer(args, num_folds=10):
     # Save results
     end = time.time()
     time_taken = end - start
-
-    # Save model state and node embeddings
-    torch.save(model.state_dict(), args.dir_+'/model')
 
     # Save results and time
     np.save(args.dir_+'/results', disease_test_scores)
@@ -252,6 +257,7 @@ if __name__ == '__main__':
     parser.add_argument('--holdout', type=int, default=False)
     parser.add_argument('--sample-diseases', type=bool, nargs='?', const=True, default=False)
     parser.add_argument('--disease_class', type=str, default=False)
+    parser.add_argument('--no-fold', type=bool, nargs ='?', const=True, default=False)
     #parser.add_argument('--heterogeneous', type=bool, nargs='?', const=True, default=False)
     args = parser.parse_args()
 
