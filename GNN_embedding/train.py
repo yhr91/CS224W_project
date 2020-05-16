@@ -176,7 +176,13 @@ def trainer(args, num_folds=10):
     
     processed_data.Y = processed_data.Y.iloc[:,sel_diseases]
     disease_test_scores = defaultdict(list)
-    
+   
+    # Either iterate over folds or pick a random fold
+    if (args.no_fold):
+        fold_itr = [np.random.randint(num_folds)]
+    else:
+    	fold_itr = range(num_folds)
+ 
     # If multi task learning
     if args.MTL:
         args.tasks = len(sel_diseases)
@@ -185,12 +191,6 @@ def trainer(args, num_folds=10):
         for ind, col in enumerate(processed_data.Y):
             y = torch.tensor(processed_data.Y[col].values.astype('int'), dtype=torch.long)
             masks_and_labels.append((utils.load_masks(y), y))
-
-        # Either iterate over folds or pick a random fold
-        if (args.no_fold):
-            fold_itr = [np.random.randint(num_folds)]
-        else:
-            fold_itr = range(num_folds)
 
         for f in fold_itr:
             print('fold', f, 'out of', num_folds)
@@ -220,13 +220,17 @@ def trainer(args, num_folds=10):
             y = torch.tensor(processed_data.Y[column].values.astype('int'), dtype=torch.long)
             masks = utils.load_masks(y)
 
-            for f in range(num_folds):
+            for f in fold_itr:
                 task = [(masks[f], y)]
                 model, score = train(data, task, args, ind, f)
 
                 test_score, output = utils.get_acc(model, data, masks[f][2], y, task=None)
                 print('On fold', f, 'and disease', ind, 'score is', test_score)
                 disease_test_scores[ind].append(test_score)
+
+                # Save model state and node embeddings
+                torch.save(model.state_dict(), args.dir_ + '/model_'+sel_diseases[ind])
+
 
     # Save results
     end = time.time()
@@ -239,7 +243,7 @@ def trainer(args, num_folds=10):
 if __name__ == '__main__':
     import argparse
     dt = str(datetime.now())[5:19].replace(' ', '_').replace(':', '-')
-    torch.cude.set_device(7) 
+    torch.cuda.set_device(7) 
     parser = argparse.ArgumentParser(description='Define network type and dataset.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--network-type', type=str, choices=['GEO_GCN', 'SAGE', 'SAGE_GCN', 'GCN', 'GEO_GAT',
         'ADA_A', 'ADA_B', 'ADA_C', 'ADA_D', 'ADA_E', 'NO_GNN'], default='GEO_GCN', help='(default: %(default)s)')
