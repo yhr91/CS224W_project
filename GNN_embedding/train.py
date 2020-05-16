@@ -16,11 +16,12 @@ import random
 from collections import defaultdict
 import time
 
-def train(data, tasks, args, ind, fold_num, step=50):
+def train(data, tasks, args, ind, fold_num):
     '''
     data is a Data object
     tasks is a list of ((train, val, test), label) tuples
     '''
+    step = args.step
     # Set up tensorboard writer
     writer = SummaryWriter(args.dir_)
 
@@ -238,25 +239,27 @@ def trainer(args, num_folds=10):
 if __name__ == '__main__':
     import argparse
     dt = str(datetime.now())[5:19].replace(' ', '_').replace(':', '-')
-    torch.cuda.set_device(7)    
-    parser = argparse.ArgumentParser(description='Define network type and dataset.')
-    parser.add_argument('--network-type', type=str, choices=['GEO_GCN', 'SAGE', 'SAGE_GCN', 'GCN', 'GEO_GAT', 'ADA_GCN','NO_GNN', ], default='GEO_GCN')
-    parser.add_argument('--dataset', type=str, choices=['Decagon', 'GNBR', 'Decagon_GNBR', 'Pathways'], default='GNBR')
-    parser.add_argument('--expt_name', type=str, default=dt)
-    parser.add_argument('--use-features', type=bool, nargs='?', const=True, default=False)
-    parser.add_argument('--MTL', type=bool, nargs='?', const=True, default=False)
-    parser.add_argument('--in-dim', type=int, default=13)
-    parser.add_argument('--hidden-dim', type=int, default=24)
-    parser.add_argument('--out-dim', type=int, default=2)
-    parser.add_argument('--edge-attr', type=int, default=1)
-    parser.add_argument('--num-heads', type=int, default=1)
-    parser.add_argument('--epochs', type=int, default=20)
-    parser.add_argument('--lr', type=float, default=0.001)
-    parser.add_argument('--shuffle', type=bool, nargs ='?', const=True, default=False)
-    parser.add_argument('--score', type=str, default='loss_sum')
-    parser.add_argument('--holdout', type=int, default=False)
-    parser.add_argument('--sample-diseases', type=bool, nargs='?', const=True, default=False)
-    parser.add_argument('--disease_class', type=str, default=False)
+    torch.cude.set_device(7) 
+    parser = argparse.ArgumentParser(description='Define network type and dataset.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--network-type', type=str, choices=['GEO_GCN', 'SAGE', 'SAGE_GCN', 'GCN', 'GEO_GAT',
+        'ADA_A', 'ADA_B', 'ADA_C', 'ADA_D', 'ADA_E', 'NO_GNN'], default='GEO_GCN', help='(default: %(default)s)')
+    parser.add_argument('--dataset', type=str, choices=['Decagon', 'GNBR', 'Decagon_GNBR', 'Pathways'], default='GNBR', help='(default: %(default)s)')
+    parser.add_argument('--expt_name', type=str, default=dt, help='(default: %(default)s)')
+    parser.add_argument('--use-features', type=bool, nargs='?', const=True, default=False, help='(default: %(default)s)')
+    parser.add_argument('--MTL', type=bool, nargs='?', const=True, default=False, help='(default: %(default)s)')
+    parser.add_argument('--in-dim', type=int, default=13, help='(default: %(default)s)')
+    parser.add_argument('--hidden-dim', type=int, default=24, help='(default: %(default)s)')
+    parser.add_argument('--out-dim', type=int, default=2, help='(default: %(default)s)')
+    parser.add_argument('--edge-attr', type=int, default=1, help='(default: %(default)s)')
+    parser.add_argument('--num-heads', type=int, default=1, help='(default: %(default)s)')
+    parser.add_argument('--epochs', type=int, default=1000, help='(default: %(default)s)')
+    parser.add_argument('--lr', type=float, default=0.001, help='(default: %(default)s)')
+    parser.add_argument('--shuffle', type=bool, nargs ='?', const=True, default=False, help='(default: %(default)s)')
+    parser.add_argument('--score', type=str, default='loss_sum', help='(default: %(default)s)')
+    parser.add_argument('--holdout', type=int, default=False, help='(default: %(default)s)')
+    parser.add_argument('--sample-diseases', type=bool, nargs='?', const=True, default=False, help='(default: %(default)s)')
+    parser.add_argument('--disease_class', type=str, default='nervous system disease', help='(default: %(default)s)')
+    parser.add_argument('--step', type=int, default=50, help='(default: %(default)s)')
     parser.add_argument('--no-fold', type=bool, nargs ='?', const=True, default=False)
     #parser.add_argument('--heterogeneous', type=bool, nargs='?', const=True, default=False)
     args = parser.parse_args()
@@ -265,7 +268,7 @@ if __name__ == '__main__':
         print('Cannot have in dim of', args.in_dim, 'changing to 1.')
         args.in_dim = 1
     
-    args.heterogeneous = args.network_type == 'ADA_GCN'
+    args.heterogeneous = 'ADA' in args.network_type
 
     def seed_torch(seed=1029):
         random.seed(seed)
