@@ -208,8 +208,8 @@ def trainer(args, num_folds=10):
                 print('On fold', f, 'and disease', ind, 'score is', test_score)
                 disease_test_scores[ind].append(test_score)
 
-                # Save model state and node embeddings
-                torch.save(model.state_dict(), args.dir_ + '/model_'+sel_diseases[ind])
+            # Save MTL model state and node embeddings, there is only central model with multiple heads
+            torch.save(model.state_dict(), args.dir_ + '/model_'+sel_diseases[0])
 
     # If single task learning
     else:
